@@ -50,14 +50,18 @@ class PoeClient {
     async sendMessage(message) {
         try {
             
-            // Not waiting sometimes causes issues with selenium not being able to find input field
-            await delay(50);
-            let inputForm = await this.driver.findElement(By.className("GrowingTextArea_textArea__eadlu"));
+            //searching via classname raises errors from time to time for some reason
+            let inputForm = await this.driver.findElement(By.css("textarea"));
+
             
-            for (let char of message) {
-                await inputForm.sendKeys(char);
-                //await delay(1);
-            }
+            //If no error is raised all the way until here, then it means input field is ready for taking input.
+
+            await this.driver.executeScript(`document.querySelector('textarea').value = \`${message}\``)
+
+            await inputForm.sendKeys(Key.SPACE);
+            await inputForm.sendKeys(Key.BACK_SPACE);
+
+            await delay(20);
 
             await inputForm.sendKeys(Key.RETURN);
             await delay(5);
