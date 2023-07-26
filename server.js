@@ -2624,11 +2624,14 @@ app.post('/generate_poe', jsonParser, async (request, response) => {
             }
             await client.sendMessage(prompt);
 
+            // necessary due to double jb issues
+            await delay(500);
+
             let waitingForMessage = true;
 
             console.log("Waiting for message...")
             while(waitingForMessage) {
-                await delay(200);
+                await delay(400);
                 let stillGenerating = await client.isGenerating();
                 if(!stillGenerating) {
                     waitingForMessage = false;
@@ -2636,7 +2639,7 @@ app.post('/generate_poe', jsonParser, async (request, response) => {
             }
 
             reply = await client.getLatestMessage();
-
+            
             console.log(reply);
             //client.disconnect_ws();
             //response.set('X-Message-Id', String(messageId));
