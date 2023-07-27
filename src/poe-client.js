@@ -41,7 +41,7 @@ class PoeClient {
         // getting taken as the response to the RP.
         // Until a fix is found, I suggest just throttling it slightly
 
-        await delay(4000);
+        await delay(800);
         let messages = await this.driver.findElements(By.xpath('//div[contains(@class, "Message_botMessageBubble__CPGMI")]'));
         let lastMessage = messages[messages.length - 1];
 
@@ -61,11 +61,14 @@ class PoeClient {
 
             //If no error is raised all the way until here, then it means input field is ready for taking input.
 
-            await this.driver.executeScript(`document.querySelector('textarea').value = \`${message}\``)
+            //await this.driver.executeScript(`document.querySelector('textarea').value = \`${message}\``)
+            await inputForm.sendKeys(message);
+            
 
             await delay(20);
 
             await inputForm.sendKeys(Key.SPACE);
+        
             await delay(5);
             await inputForm.sendKeys(Key.BACK_SPACE);
 
@@ -139,8 +142,11 @@ class PoeClient {
         // too fast for its own good, checks before stop button even appears, so
         // a bit of throttling fixes it
         await delay(150);
-        let stopButtonElements = await this.driver.findElements(By.className("ChatStopMessageButton_stopButton__LWNj6"));
-        return stopButtonElements.length > 0;
+        //let stopButtonElements = await this.driver.findElements(By.className("ChatStopMessageButton_stopButton__LWNj6"));
+        let suggestionContainers = await this.driver.findElements(By.className("ChatMessageSuggestedReplies_suggestedRepliesContainer__JgW12"));
+        
+
+        return suggestionContainers.length === 0;
     }
 
     async getSuggestions() {
