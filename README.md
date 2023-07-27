@@ -14,6 +14,8 @@ To install in Termux run:
 3. Install geckodriver: `pkg install geckodriver`
 4. Run `start.sh` and enjoy!
 
+   if you get WebDriverError, make sure to run `pkg install libexpat`
+
 ## Known issues
 - Streaming and suggestion currently don't work.
 - Refreshing the browser doesn't stop the existing selenium instance from running. If your browser tab crashes, or you need to refresh the page for any reason, please restart the application.
