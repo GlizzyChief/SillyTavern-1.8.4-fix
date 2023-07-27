@@ -2643,7 +2643,10 @@ app.post('/generate_poe', jsonParser, async (request, response) => {
             console.log(reply);
             //client.disconnect_ws();
             //response.set('X-Message-Id', String(messageId));
-            return response.send({ 'reply': reply });
+            //return response.send({ 'reply': reply });
+            
+            // Temporary fix due to issues during parsing json on client side
+            return response.send( reply );
         }
         catch {
             //client.disconnect_ws();
