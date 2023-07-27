@@ -5,6 +5,8 @@ It can be used the same way as SillyTavern 1.8.4. Just input your p-b cookie and
 
 # Instructions
 
+NOTE: Please select ChatPGT as the model, Assistant currently causes issues with textarea registering
+
 Installation is the same as original SillyTavern, with only Termux installation differing slightly.
 To install in Termux run:
 1. Install x11 repo: `pkg install x11-repo`
@@ -16,6 +18,7 @@ To install in Termux run:
 - Streaming and suggestion currently don't work.
 - Refreshing the browser doesn't stop the existing selenium instance from running. If your browser tab crashes, or you need to refresh the page for any reason, please restart the application.
 - Performance leaves a fair bit to be desired. Any ideas and pull requests are welcome!
+- Doesn't work when using Assistant (AKA Sage) as model
 
 ## Contact
 Please drop me a message on [Matrix](https://matrix.to/#/@glizzychief:catgirl.cloud) if you have any questions or just want to say hi.
