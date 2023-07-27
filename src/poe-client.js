@@ -41,7 +41,7 @@ class PoeClient {
         // getting taken as the response to the RP.
         // Until a fix is found, I suggest just throttling it slightly
 
-        await delay(800);
+        await delay(4000);
         let messages = await this.driver.findElements(By.xpath('//div[contains(@class, "Message_botMessageBubble__CPGMI")]'));
         let lastMessage = messages[messages.length - 1];
 
