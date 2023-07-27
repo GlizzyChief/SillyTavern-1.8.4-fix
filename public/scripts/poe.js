@@ -392,8 +392,11 @@ async function sendMessage(prompt, withStreaming, withSuggestions, signal) {
                 suggestReplies(messageId);
             }
 
-            const data = await response.json();
-            return data.reply;
+            // Temporary fix since it for some reason returns the
+            // whole json object as a message
+            /* const data = await response.json();
+            return data.reply; */
+            return await response.text();
         }
         else {
             return '';
