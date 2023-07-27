@@ -22,7 +22,7 @@ class PoeClient {
     async initializeDriver() {
 
         let options = new Options();
-        //options.addArguments("--headless");
+        options.addArguments("--headless");
 
         this.driver = await new Builder().forBrowser(Browser.FIREFOX).setFirefoxOptions(options).build();
         await this.driver.get('https://poe.com');
