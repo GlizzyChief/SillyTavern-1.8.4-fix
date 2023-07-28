@@ -2519,19 +2519,21 @@ app.post('/purge_poe', jsonParser, async (request, response) => {
         return response.sendStatus(401);
     }
 
-    const bot = request.body.bot ?? POE_DEFAULT_BOT;
+    //const bot = request.body.bot ?? POE_DEFAULT_BOT;
     const count = request.body.count ?? -1;
 
     try {
         const client = await getPoeClient(token, true);
-        await client.clearContext();
-        /*if (count > 0) {
+        
+        
+        if (count > 0) {
+            //Not sure what to do rn, so just ignore it in batch messages
         }
         else {
-            //await client.sendJailbreak(bot);
+            await client.clearContext();
         }
         //client.disconnect_ws();
-        */
+        
         return response.send({ "ok": true });
     }
     catch (err) {
@@ -2565,6 +2567,7 @@ app.post('/generate_poe', jsonParser, async (request, response) => {
 
     const prompt = request.body.prompt;
     const bot = request.body.bot ?? POE_DEFAULT_BOT;
+    // Streaming not currently implemented
     const streaming = /* request.body.streaming ?? */ false;
 
     let client;
@@ -2618,8 +2621,7 @@ app.post('/generate_poe', jsonParser, async (request, response) => {
                 messageId = mes.messageId;
             }*/
 
-            // No reply timeout implemented yet  (
-            if(bot !== client.botName) {
+            if(botNames[parseInt(bot)] !== client.botName) {
                 await client.changeBot(botNames[parseInt(bot)]);
             }
             await client.sendMessage(prompt);
@@ -2630,11 +2632,20 @@ app.post('/generate_poe', jsonParser, async (request, response) => {
             let waitingForMessage = true;
 
             console.log("Waiting for message...")
+            
+            let startTime = Date.now();
             while(waitingForMessage) {
                 await delay(400);
                 let stillGenerating = await client.isGenerating();
                 if(!stillGenerating) {
                     waitingForMessage = false;
+                }
+                let milliSecondsElapsed = Math.floor(Date.now() - startTime);
+                if (milliSecondsElapsed > 120000) {
+                    // Currently only informative, should get properly handled in the future
+
+                    console.error("!!!!!!!!!!!!!!!!!!!ERROR: message timeout. Message is taking longer than 2 minutes to get generated!!!!!!!!!!!!!!!!!!!");
+                    return response.send("Message timeout after more than 2 minutes. Please try regenerating the message.");
                 }
             }
 

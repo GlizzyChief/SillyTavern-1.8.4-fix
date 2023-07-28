@@ -11,6 +11,8 @@ class PoeClient {
 
     constructor(poeCookie, botName) {
         this.poeCookie = poeCookie;
+        // Currently, Assistant doesn't seem to work. This is simply a failsafe
+        if (botName === "Assistant") botName = "ChatGPT";
         this.botName = botName;
     }
 
@@ -24,12 +26,21 @@ class PoeClient {
         let options = new Options();
         options.addArguments("--headless");
 
+
+        // Awaits are used as an attempt to avoid crashing on low-end devices.
         this.driver = await new Builder().forBrowser(Browser.FIREFOX).setFirefoxOptions(options).build();
         await this.driver.get('https://poe.com');
         await delay(1000);
         await this.driver.manage().addCookie({ name: 'p-b', value: this.poeCookie });
         await delay(1000);
         await this.driver.get(`https://poe.com/${this.botName}`);
+
+        await delay(700);
+        let modalCloseButton = await this.driver.findElements(By.className("Modal_closeButton__ZYPm5"));
+        if(modalCloseButton.length !== 0) {
+            await modalCloseButton[0].click();
+            await delay(100);
+        }
 
         /*if ((await this.driver.getTitle()) !== "Assistant - Poe") {
             console.log("Something wrong during initializing");
@@ -43,7 +54,7 @@ class PoeClient {
         // getting taken as the response to the RP.
         // Until a fix is found, I suggest just throttling it slightly
 
-        await delay(800);
+        await delay(1000);
         let messages = await this.driver.findElements(By.xpath('//div[contains(@class, "Message_botMessageBubble__CPGMI")]'));
         let lastMessage = messages[messages.length - 1];
 
@@ -170,6 +181,7 @@ class PoeClient {
             suggestions.push(suggestion);
         }
 
+        console.log(suggestions);
         return suggestions;
     }
 
@@ -200,6 +212,8 @@ class PoeClient {
 
     // No error handling currently implemented for non-existing bots :/
     async changeBot(botName) {
+        // Currently, Assistant doesn't seem to work, so this is simply a failsafe.
+        if (botName === "Assistant") botName = "ChatGPT";
         this.botName = botName;
         await this.driver.get(`https://poe.com/${this.botName}`);
 
