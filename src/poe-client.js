@@ -26,7 +26,9 @@ class PoeClient {
 
         this.driver = await new Builder().forBrowser(Browser.FIREFOX).setFirefoxOptions(options).build();
         await this.driver.get('https://poe.com');
+        await delay(1000);
         await this.driver.manage().addCookie({ name: 'p-b', value: this.poeCookie });
+        await delay(1000);
         await this.driver.get(`https://poe.com/${this.botName}`);
 
         /*if ((await this.driver.getTitle()) !== "Assistant - Poe") {
