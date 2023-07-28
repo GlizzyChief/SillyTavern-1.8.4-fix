@@ -2482,7 +2482,7 @@ async function getPoeClient(token, useCache = false) {
     }
     else {
         if (poeClientCache[token]) {
-            await token.closeDriver();
+            await client.closeDriver();
         }
         client = new PoeClient(token, POE_DEFAULT_BOT);
         await client.initializeDriver();
