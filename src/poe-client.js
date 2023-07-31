@@ -195,8 +195,16 @@ class PoeClient {
     }
 
     async getBotNames() {
+
+        let modalCloseButton = await this.driver.findElements(By.className("Modal_closeButton__ZYPm5"));
+        if(modalCloseButton.length !== 0) {
+            await modalCloseButton[0].click();
+            await delay(100);
+        }
+        
         let botNameContainers = await this.driver.findElements(By.className("BotHeader_title__q67To"));
         let names = [];
+        console.log(botNameContainers.length);
 
         for (let botNameContainer of botNameContainers) {
             let nameDiv = await botNameContainer.findElement(By.css("div"));
@@ -204,6 +212,8 @@ class PoeClient {
             let name = await nameParagraph.getAttribute("innerHTML");
             names.push(name);
         }
+
+        console.log(names);
 
         return names;
     }
