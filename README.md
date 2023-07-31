@@ -45,7 +45,8 @@ For getting it to work any other operating system, please contact me!
 - Fixed characters responding with unfinished messages or triple dots
 - Fixed issues caused by Poe putting an ad modal when opening some bots
 - Temporarily fixed issues with Assistant by simply using ChatGPT instead
-- Fixed proper bot closing 
+- Fixed proper bot closing
+- Fixed improper sending of chunked messages when using large context windows
 
 ## Contact
 Please drop me a message on [Matrix](https://matrix.to/#/@glizzychief:catgirl.cloud) or Discord (glizzychief#1048) if you have any questions or just want to say hi.
