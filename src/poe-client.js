@@ -42,6 +42,11 @@ class PoeClient {
             await delay(100);
         }
 
+        let notLoggedInButton = await this.driver.findElements(By.className("LoggedOutBotInfoPage_appButton__UO6NU"));
+        if (notLoggedInButton.length !== 0) {
+            console.log("Poe.com did not authenticate with the provided cookie.");
+            return false;
+        }
         /*if ((await this.driver.getTitle()) !== "Assistant - Poe") {
             console.log("Something wrong during initializing");
         }*/
