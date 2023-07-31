@@ -34,18 +34,18 @@ Afterwards, simply run start.bat
 
 
 ## Other OSes
-For any other operating systems, please contact me
+For getting it to work any other operating system, please contact me!
 
 ## Known issues
 - Streaming responses and suggestion currently don't work.
-- Refreshing the browser doesn't stop the existing selenium instance from running. If your browser tab crashes, or you need to refresh the page for any reason, please restart the application.
-- Performance depends somewhat on the device, currently averaging 22 seconds on PC and varies somewhat on mobile. However, due to selenium issues, it seems that at least 2 GBs of RAM are needed to run smoothly. Currently looking into a way to fix it.
+- Performance depends somewhat on the device, currently averaging 22 seconds on PC and varies somewhat on mobile. However, due to selenium issues, it seems that at least 2 GBs of RAM are needed to run smoothly. For older devices, please check out [the chrome version of the project](https://github.com/GlizzyChief/SillyTavern-1.8.4-fix-chrome)
 
 ## Recent fixes
 - Fixed issues with characters responding with '{'reply': 'some text'}'
 - Fixed characters responding with unfinished messages or triple dots
 - Fixed issues caused by Poe putting an ad modal when opening some bots
 - Temporarily fixed issues with Assistant by simply using ChatGPT instead
+- Fixed proper bot closing 
 
 ## Contact
 Please drop me a message on [Matrix](https://matrix.to/#/@glizzychief:catgirl.cloud) or Discord (glizzychief#1048) if you have any questions or just want to say hi.
