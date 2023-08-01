@@ -79,8 +79,8 @@ class PoeClient {
 
             //If no error is raised all the way until here, then it means input field is ready for taking input.
 
-            //await this.driver.executeScript(`document.querySelector('textarea').value = \`${message}\``)
-            await inputForm.sendKeys(message);
+            await this.driver.executeScript(`document.querySelector('textarea').value = arguments[0]`, message);
+            //await inputForm.sendKeys(message);
             
 
             await delay(20);
