@@ -20,8 +20,6 @@ To install, run the following commands in Termux:
 - pkg install libexpat
 - git clone https://github.com/GlizzyChief/SillyTavern-1.8.4-fix
 - cd SillyTavern-1.8.4-fix
-- Run `which chromium-browser` and copy the output
-- Run `nano src/poe-client.js`, move down to 37th line and replace the parameter `executablePath` with the output of the previous command (delete `/usr/bin/chromium` and paste your value, without touching the quotes). Once you've done it, press CTRL in your termux, press x on your keyboard, then press y, then Enter.
 - Run ./start.sh
 
 If start.sh causes issues, then please run:
@@ -30,15 +28,16 @@ If start.sh causes issues, then please run:
 
 
 ## Windows
-For using on Windows, simply make sure to install chromium and chromedriver.
+For using on Windows, simply make sure to install chromium and chromedriver. ALTERNATIVELY, just having chrome installed works!
 Then, download the project either as .zip or using git (same as above)
-Afterwards, open `src/poe-client.js` with Notepad, move to the 37th line and replace `/usr/bin/chromium` with the path to your chromium.exe and simply run start.bat!
-
+Afterwards, open `src/poe-client.js` with Notepad, move to the 37th line and replace `/usr/bin/chromium` with the path to your chrome.exe and simply run start.bat!
+To get the path, right click on your chrome shortcut. Then, press "Open file location". Then, in the opened folder, find "chrome.exe", and, while holding shift, right click on it. In the opened menu, press "Copy path". MAKE SURE TO ADD EXTRA \ to all \ IN THE PATH!
 
 ## Other OSes
 For getting it to work any other operating system, please contact me!
 
 ## Known issues
+- Looks like Cloudflare currently detects windows, working on bypassing it!
 - Streaming responses and suggestion currently don't work.
 - Performance depends somewhat on the device, currently averaging 22 seconds on PC and varies somewhat on mobile. However, due to selenium issues, it seems that at least 2 GBs of RAM are needed to run smoothly. For older devices, please check out [the chrome version of the project](https://github.com/GlizzyChief/SillyTavern-1.8.4-fix-chrome)
 
