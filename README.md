@@ -21,7 +21,7 @@ To install, run the following commands in Termux:
 - git clone https://github.com/GlizzyChief/SillyTavern-1.8.4-fix
 - cd SillyTavern-1.8.4-fix
 - Run `which chromium-browser` and copy the output
-- Run `nano src/poe-client.js`, move down to 37th line and replace the parameter `executablePath` with the output of the previous command (delete `/usr/bin/chromium` and paste your value, without touching the quotes). Once you've done it, press CTRL in your termux, press c on your keyboard, then press y, then Enter.
+- Run `nano src/poe-client.js`, move down to 37th line and replace the parameter `executablePath` with the output of the previous command (delete `/usr/bin/chromium` and paste your value, without touching the quotes). Once you've done it, press CTRL in your termux, press x on your keyboard, then press y, then Enter.
 - Run ./start.sh
 
 If start.sh causes issues, then please run:
