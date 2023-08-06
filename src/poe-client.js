@@ -1,19 +1,29 @@
-const { Builder, Browser, By, Key, until, Actions } = require('selenium-webdriver');
-const { Options } = require('selenium-webdriver/firefox');
+const puppeteer = require('puppeteer-core');
+const { PuppeteerExtra } = require('puppeteer-extra');
+const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 const { NodeHtmlMarkdown } = require('node-html-markdown');
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
+const puppeteerWithPlugin = new PuppeteerExtra(puppeteer);
+
+let stealthPlugin = StealthPlugin();
+
+puppeteerWithPlugin.use(stealthPlugin);
 
 class PoeClient {
-    driver = null;
+    browser = null;
+    page = null;
     botName = "ChatGPT";
 
     constructor(poeCookie, botName) {
         this.poeCookie = poeCookie;
         // Currently, Assistant doesn't seem to work. This is simply a failsafe
-        if (botName === "Assistant") botName = "ChatGPT";
-        this.botName = botName;
+        if (botName === "Assistant") {
+            this.botname = "ChatGPT"
+        } else {
+            this.botName = botName;
+        }
     }
 
 
@@ -22,101 +32,116 @@ class PoeClient {
     }
 
     async initializeDriver() {
+        
+        
+        this.browser = await puppeteer.launch({ executablePath: "/usr/bin/chromium", headless: "new" });
+        this.page = await this.browser.newPage();
 
-        let options = new Options();
-        options.addArguments("--headless");
+
+        await this.page.evaluateOnNewDocument(() => {
+            Object.defineProperty(navigator, 'webdriver', {value: false, writable: false});
+            Object.defineProperty(navigator, 'userAgent', {value: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36"});
+            Object.defineProperty(window, 'chrome', {value: true, writable: false});
+            Object.defineProperty(navigator, 'languages', {value: ["en-US", "en"], writable: false});
+        })
+        
+        // await this.page.goto("https://bot.sannysoft.com/");
 
 
-        // Awaits are used as an attempt to avoid crashing on low-end devices.
-        this.driver = await new Builder().forBrowser(Browser.FIREFOX).setFirefoxOptions(options).build();
-        await this.driver.get('https://poe.com');
+        // await delay(12000);
+        
+        await this.page.goto('https://poe.com');
         await delay(1000);
-        await this.driver.manage().addCookie({ name: 'p-b', value: this.poeCookie });
+        await this.page.setCookie({ name: 'p-b', value: this.poeCookie });
         await delay(1000);
-        await this.driver.get(`https://poe.com/${this.botName}`);
+        await this.page.goto('https://poe.com');
+        await delay(1000);
+        await this.page.goto(`https://poe.com/${this.botName}`);
 
         await delay(700);
-        let modalCloseButton = await this.driver.findElements(By.className("Modal_closeButton__ZYPm5"));
-        if(modalCloseButton.length !== 0) {
-            await modalCloseButton[0].click();
-            await delay(100);
+        if (await this.page.$(".Modal_closeButton__ZYPm5") !== null) {
+            let modalCloseButton = await this.page.waitForSelector(".Modal_closeButton__ZYPm5");
+            await modalCloseButton.click();
+            await delay(200);
         }
 
-        let notLoggedInButton = await this.driver.findElements(By.className("LoggedOutBotInfoPage_appButton__UO6NU"));
-        if (notLoggedInButton.length !== 0) {
+        if (await this.page.$(".LoggedOutBotInfoPage_appButton__UO6NU") !== null) {
             console.log("Poe.com did not authenticate with the provided cookie.");
             return false;
         }
-        /*if ((await this.driver.getTitle()) !== "Assistant - Poe") {
-            console.log("Something wrong during initializing");
-        }*/
 
         return true;
     }
 
     async getLatestMessage() {
-        // this creates issues with jailbreak message being sent twise & the response of the second JB
+        // this creates issues with jailbreak message being sent twice & the response of the second JB
         // getting taken as the response to the RP.
         // Until a fix is found, I suggest just throttling it slightly
 
         await delay(1000);
-        let messages = await this.driver.findElements(By.xpath('//div[contains(@class, "Message_botMessageBubble__CPGMI")]'));
-        let lastMessage = messages[messages.length - 1];
+        console.log("before last message")
+        //let messages = await this.driver.findElements(By.xpath('//div[contains(@class, "Message_botMessageBubble__CPGMI")]'));
+        let lastMessage = await this.page.$$eval(".Message_botMessageBubble__CPGMI", (allMessages) => {
+            return allMessages[allMessages.length - 1].childNodes[0].innerHTML;
+        });
+
+        console.log("after last message")
+        console.log(lastMessage)
 
         if (lastMessage === "...") {
             return null;
         }
 
-        return NodeHtmlMarkdown.translate(await lastMessage.getAttribute("innerHTML"));
+
+        return NodeHtmlMarkdown.translate(lastMessage);
     }
 
     async sendMessage(message) {
         try {
-
             //searching via classname raises errors from time to time for some reason
-            let inputForm = await this.driver.findElement(By.css("textarea"));
-
-
-            //If no error is raised all the way until here, then it means input field is ready for taking input.
-
-            await this.driver.executeScript(`document.querySelector('textarea').value = arguments[0]`, message);
-            //await inputForm.sendKeys(message);
+            //let inputForm = await this.driver.findElement(By.css("textarea"));
             
+            if (this.page.$("textarea") === null) {
+                throw new Error("Input element not found! Aborting.");
+            }
 
-            await delay(20);
+            await this.page.evaluate((message) => {
+                document.querySelector('textarea').value = message;
+            }, message)
 
-            await inputForm.sendKeys(Key.SPACE);
+            let inputForm = await this.page.$("textarea");
+
+            await delay(500);
+             
+            await inputForm.press("Space");
         
             await delay(5);
-            await inputForm.sendKeys(Key.BACK_SPACE);
+            await inputForm.press("Backspace");
 
             await delay(20);
 
-            await inputForm.sendKeys(Key.RETURN);
-            await delay(5);
+            await inputForm.press("Enter");
+
+            await delay(100);
 
             let waitingForMessage = true;
             while (waitingForMessage) {
-                let messages = await this.driver.findElements(By.xpath('//div[contains(@class, "Message_botMessageBubble__CPGMI")]'));
+                //let messages = await this.driver.findElements(By.xpath('//div[contains(@class, "Message_botMessageBubble__CPGMI")]'));
 
-                if (messages.length === 0) {
-                    await delay(1);
+                if (await this.page.$(".Message_botMessageBubble__CPGMI") === null) {
+                    await delay(5);
                     continue;
                 }
 
-                let latestMessage = messages[messages.length - 1].text;
+                let lastMessage = await this.page.$$eval(".Message_botMessageBubble__CPGMI", (allMessages) => {
+                    return allMessages[allMessages.length - 1].innerHTML;
+                });
 
-                if (latestMessage === "...") {
-                    await delay(1);
+                if (lastMessage === "...") {
+                    await delay(5);
                     continue;
                 }
 
-                /* let abortButtons = await this.driver.findElements(By.className("ChatStopMessageButton_stopButton__LWNj6"));
-
-                if (abortButtons.length === 0) {
-                    await delay(1);
-                    continue;
-                } */
 
                 waitingForMessage = false;
 
@@ -135,12 +160,13 @@ class PoeClient {
     async abortMessage() {
         let stillGenerating = await this.isGenerating();
         if (!stillGenerating) return false;
-        let abortButtons = await this.driver.findElements(By.className("ChatStopMessageButton_stopButton__LWNj6"));
 
-        if(abortButtons.length === 0) return false;
+        if (await this.page.$(".ChatStopMessageButton_stopButton__LWNj6") === null) {
+            return false;
+        }
 
-        let abortButton = abortButtons[0];
-        await abortButton.click();
+        await this.page.locator(".ChatStopMessageButton_stopButton__LWNj6").click();
+       
         await delay(100);
         return true;
     }
@@ -149,8 +175,8 @@ class PoeClient {
         let stillGenerating = await this.isGenerating();
         if(stillGenerating) await this.abortMessage();
 
-        let clearButton = await this.driver.findElement(By.className("ChatBreakButton_button__EihE0"));
-        await clearButton.click();
+        await this.page.locator(".ChatBreakButton_button__EihE0").click();
+        
 
         return true;
     }
@@ -160,11 +186,15 @@ class PoeClient {
         // too fast for its own good, checks before stop button even appears, so
         // a bit of throttling fixes it
         await delay(150);
-        //let stopButtonElements = await this.driver.findElements(By.className("ChatStopMessageButton_stopButton__LWNj6"));
-        let suggestionContainers = await this.driver.findElements(By.className("ChatMessageSuggestedReplies_suggestedRepliesContainer__JgW12"));
+
+        console.log("Currently in generating")
         
 
-        return suggestionContainers.length === 0;
+        if(await this.page.$(".ChatMessageSuggestedReplies_suggestedRepliesContainer__JgW12") !== null) {
+            return false;
+        }
+        
+        return true;
     }
 
     async getSuggestions() {
@@ -191,36 +221,20 @@ class PoeClient {
     }
 
     // Not implemented currently
-    async deleteLatestMessage() {
-        let botMessages = await this.driver.findElements(By.xpath('//div[contains(@class, "Message_botMessageBubble__CPGMI")]'));
-        let latestMessage = botMessages[botMessages.length - 1];
+    // async deleteLatestMessage() {
+    //     let botMessages = await this.driver.findElements(By.xpath('//div[contains(@class, "Message_botMessageBubble__CPGMI")]'));
+    //     let latestMessage = botMessages[botMessages.length - 1];
 
 
-        //console.log(latestMessage);
-    }
+    //     //console.log(latestMessage);
+    // }
 
     async getBotNames() {
+        let botNames = await this.page.$$eval(".BotHeader_title__q67To>div", (containers) => {
+            return containers.map(container => container.childNodes[0].innerHTML);
+        });
 
-        let modalCloseButton = await this.driver.findElements(By.className("Modal_closeButton__ZYPm5"));
-        if(modalCloseButton.length !== 0) {
-            await modalCloseButton[0].click();
-            await delay(100);
-        }
-        
-        let botNameContainers = await this.driver.findElements(By.className("BotHeader_title__q67To"));
-        let names = [];
-        console.log(botNameContainers.length);
-
-        for (let botNameContainer of botNameContainers) {
-            let nameDiv = await botNameContainer.findElement(By.css("div"));
-            let nameParagraph = await nameDiv.findElement(By.css("p"));
-            let name = await nameParagraph.getAttribute("innerHTML");
-            names.push(name);
-        }
-
-        console.log(names);
-
-        return names;
+        return Array.from(new Set(botNames));
     }
 
 
@@ -228,9 +242,12 @@ class PoeClient {
     // No error handling currently implemented for non-existing bots :/
     async changeBot(botName) {
         // Currently, Assistant doesn't seem to work, so this is simply a failsafe.
-        if (botName === "Assistant") botName = "ChatGPT";
-        this.botName = botName;
-        await this.driver.get(`https://poe.com/${this.botName}`);
+        if (botName === "Assistant")  {
+            this.botName = "ChatGPT"; 
+        } else {
+            this.botName = botName;
+        }
+        await this.page.goto(`https://poe.com/${this.botName}`);
 
         return true;
     }
