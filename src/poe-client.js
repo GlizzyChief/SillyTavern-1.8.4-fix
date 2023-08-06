@@ -28,7 +28,7 @@ class PoeClient {
 
 
     async closeDriver() {
-        await this.driver.close();
+        await this.browser.close();
     }
 
     async initializeDriver() {
