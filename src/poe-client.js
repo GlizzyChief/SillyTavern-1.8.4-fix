@@ -40,7 +40,11 @@ class PoeClient {
 
         await this.page.evaluateOnNewDocument(() => {
             Object.defineProperty(navigator, 'webdriver', {value: false, writable: false});
-            Object.defineProperty(navigator, 'userAgent', {value: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36"});
+            if(navigator.platform === "Win32") {
+				Object.defineProperty(navigator, 'userAgent', {value: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36' });
+            } else {
+				Object.defineProperty(navigator, 'userAgent', {value: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36"});
+			}
             Object.defineProperty(window, 'chrome', {value: true, writable: false});
             Object.defineProperty(navigator, 'languages', {value: ["en-US", "en"], writable: false});
         })
