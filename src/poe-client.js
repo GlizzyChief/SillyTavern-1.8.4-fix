@@ -34,7 +34,7 @@ class PoeClient {
     async initializeDriver() {
         
         
-        this.browser = await puppeteer.launch({ executablePath: "/usr/bin/chromium", headless: "new" });
+        this.browser = await puppeteer.launch({ executablePath: "/data/data/com.termux/files/usr/bin/chromium-browser", headless: "new" });
         this.page = await this.browser.newPage();
 
 
