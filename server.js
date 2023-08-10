@@ -2484,7 +2484,7 @@ async function getPoeClient(token, useCache = false) {
         if (poeClientCache[token]) {
             await poeClientCache[token]?.closeDriver();
         }
-        client = new PoeClient(token, POE_DEFAULT_BOT);
+        client = new PoeClient(token, "ChatGPT");
         let successfulltInitialized = await client.initializeDriver();
         if(!successfulltInitialized) {
             throw new Error("Poe did not authenticate with the given p-b cookie. Please try another p-b cookie or check the provided cookie for correctness.")
