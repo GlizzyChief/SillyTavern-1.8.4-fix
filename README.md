@@ -28,16 +28,17 @@ If start.sh causes issues, then please run:
 
 
 ## Windows
-For using on Windows, simply make sure to install chromium and chromedriver. ALTERNATIVELY, just having chrome installed works!
-Then, download the project either as .zip or using git (same as above)
-Afterwards, open `src/poe-client.js` with Notepad, move to the 37th line and replace `/usr/bin/chromium` with the path to your chrome.exe and simply run start.bat!
+For using on Windows, simply make sure to install chrome. ALTERNATIVELY, Chromium also works!
+Then, download the project either as .zip or using git (same as above).
+If you have Chrome installed anywhere othen than `C:\Windows\Program Files\Google\Chrome\chrome.exe` (the default path) open `src/poe-client.js` with Notepad, and on the first line replace `C:\Windows\Program Files\Google\Chrome\chrome.exe` with the path to your chrome.exe and simply run start.bat!
 To get the path, right click on your chrome shortcut. Then, press "Open file location". Then, in the opened folder, find "chrome.exe", and, while holding shift, right click on it. In the opened menu, press "Copy path". MAKE SURE TO ADD EXTRA \ to all \ IN THE PATH!
+If you've installed Chrome properly, i.e. using the official installer, then just run start.bat.
 
 ## Other OSes
 For getting it to work any other operating system, please contact me!
 
 ## Known issues
-- Looks like Cloudflare currently detects windows, working on bypassing it!
+- On Windows, sometimes it's necessary to put the browser into non-headless mode.
 - Streaming responses and suggestion currently don't work.
 - Performance depends somewhat on the device, currently averaging 22 seconds on PC and varies somewhat on mobile. However, due to selenium issues, it seems that at least 2 GBs of RAM are needed to run smoothly. For older devices, please check out [the chrome version of the project](https://github.com/GlizzyChief/SillyTavern-1.8.4-fix-chrome)
 
@@ -49,6 +50,8 @@ For getting it to work any other operating system, please contact me!
 - Fixed proper bot closing
 - Fixed improper sending of chunked messages when using large context windows
 - Bypassed Cloudflare's webdriver-driven headless browser detection
+- Added failsafes for common issues
+- Added default paths and slightly fixed message formatting
 
 ## Contact
 Please drop me a message on [Matrix](https://matrix.to/#/@glizzychief:catgirl.cloud) or Discord (glizzychief#1048) if you have any questions or just want to say hi.
