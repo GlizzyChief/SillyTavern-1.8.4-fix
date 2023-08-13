@@ -3042,7 +3042,7 @@ app.post("/generate_poe", jsonParser, async (request, response) => {
             await client.sendMessage(prompt);
             
             // necessary due to double jb issues
-            await delay(50);
+            await delay(80);
             
             
             let reply = "";
