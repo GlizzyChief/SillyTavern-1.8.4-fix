@@ -53,6 +53,7 @@ For getting it to work any other operating system, please contact me!
 - Added default paths and slightly fixed message formatting
 - Implemented streaming
 - Restored functionality allowing to use custom bots
+- Implemented JB-saving (message deleting)
 
 ## Contact
 Please drop me a message on [Matrix](https://matrix.to/#/@glizzychief:catgirl.cloud) or Discord (glizzychief#1048) if you have any questions or just want to say hi.
