@@ -39,8 +39,7 @@ For getting it to work any other operating system, please contact me!
 
 ## Known issues
 - On Windows, sometimes it's necessary to put the browser into non-headless mode.
-- Streaming responses and suggestion currently don't work.
-- Performance depends somewhat on the device, currently averaging 22 seconds on PC and varies somewhat on mobile. However, due to selenium issues, it seems that at least 2 GBs of RAM are needed to run smoothly. For older devices, please check out [the chrome version of the project](https://github.com/GlizzyChief/SillyTavern-1.8.4-fix-chrome)
+- Performance depends somewhat on the device, currently averaging 6 seconds on PC and 12 seconds on android
 
 ## Recent fixes
 - Fixed issues with characters responding with '{'reply': 'some text'}'
@@ -52,6 +51,8 @@ For getting it to work any other operating system, please contact me!
 - Bypassed Cloudflare's webdriver-driven headless browser detection
 - Added failsafes for common issues
 - Added default paths and slightly fixed message formatting
+- Implemented streaming
+- Restored functionality allowing to use custom bots
 
 ## Contact
 Please drop me a message on [Matrix](https://matrix.to/#/@glizzychief:catgirl.cloud) or Discord (glizzychief#1048) if you have any questions or just want to say hi.

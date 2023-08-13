@@ -26,6 +26,8 @@ class PoeClient {
         } else {
             this.botName = botName;
         }
+
+        console.log(`BOTNAME DURING INITIALIZING: ${this.botName}`);
     }
 
     async closeDriver() {
@@ -40,10 +42,18 @@ class PoeClient {
                 headless: "new",
             });
         } catch {
-            this.browser = await puppeteer.launch({
-                executablePath: DEFAULT_WINDOWS_PATH,
-                headless: false,
-            });
+            try {
+
+                this.browser = await puppeteer.launch({
+                    executablePath: DEFAULT_WINDOWS_PATH,
+                    headless: false,
+                });
+            } catch {
+                this.browser = await puppeteer.launch({
+                    executablePath: "/usr/bin/chromium",
+                    headless: false,
+                });
+            }
         }
 
         this.page = await this.browser.newPage();
@@ -134,8 +144,35 @@ class PoeClient {
         }
 
         return NodeHtmlMarkdown.translate(
-            lastMessage.replaceAll("\\*", "*").replaceAll("_", "*")
+            lastMessage
+        ).replaceAll("\\*", "*").replaceAll("_", "*");
+    }
+
+    async getLatestMessageStreaming() {
+        // this creates issues with jailbreak message being sent twice & the response of the second JB
+        // getting taken as the response to the RP.
+        // Until a fix is found, I suggest just throttling it slightly
+
+    
+        
+        //let messages = await this.driver.findElements(By.xpath('//div[contains(@class, "Message_botMessageBubble__CPGMI")]'));
+        let lastMessage = await this.page.$$eval(
+            ".Message_botMessageBubble__CPGMI",
+            (allMessages) => {
+                return allMessages[allMessages.length - 1].childNodes[0]
+                    .innerHTML
+            }
         );
+
+
+        if (lastMessage === "...") {
+            return "";
+        }
+
+
+        return NodeHtmlMarkdown.translate(
+            lastMessage
+        ).replaceAll("\\*", "*").replaceAll("_", "*");
     }
 
     async sendMessage(message) {
@@ -231,12 +268,20 @@ class PoeClient {
         return true;
     }
 
-    async isGenerating() {
+    async isGenerating(streaming = false) {
         // too fast for its own good, checks before stop button even appears, so
         // a bit of throttling fixes it
-        await delay(150);
+        if (!streaming) await delay(150);
 
-        console.log("Currently in generating");
+        //console.log("Currently in generating");
+
+        if (
+            (await this.page.$(
+                ".Message_noSignIcon__3f_KY"
+            )) !== null
+        ) {
+            throw new Error("ERROR: Token window exceeded!!!!!!!!!")
+        }
 
         if (
             (await this.page.$(
@@ -249,42 +294,64 @@ class PoeClient {
         return true;
     }
 
+    // Currently not working due to SillyTavern itself ((
     async getSuggestions() {
         await delay(5000);
-        let suggestionContainers = await this.driver.findElements(
-            By.className(
-                "ChatMessageSuggestedReplies_suggestedRepliesContainer__JgW12"
-            )
+
+        let suggestedMessages = await this.page.$$eval(
+            ".ChatMessageSuggestedReplies_suggestedRepliesContainer__JgW12",
+            (allMessages) => {
+                return allMessages.map(message => message.childNodes[0].textContent);
+            }
         );
 
-        if (suggestionContainers.length === 0) {
+
+        if (suggestedMessages.length === 0) {
             return [];
         }
 
-        let suggestions = [];
-
-        let suggestionButtons = await suggestionContainers[0].findElements(
-            By.css("button")
-        );
-
-        //console.log(suggestionButtons);
-
-        for (let suggestionButton of suggestionButtons) {
-            let suggestion = await suggestionButton.getText();
-            suggestions.push(suggestion);
-        }
-
-        console.log(suggestions);
-        return suggestions;
+        
+        return suggestedMessages;
     }
 
-    // Not implemented currently
-    // async deleteLatestMessage() {
-    //     let botMessages = await this.driver.findElements(By.xpath('//div[contains(@class, "Message_botMessageBubble__CPGMI")]'));
-    //     let latestMessage = botMessages[botMessages.length - 1];
+    
+    async deleteMessages(count) {
+        
+        await this.page.evaluate(() => {
+            let allThreeDotsButtons = document.querySelectorAll(".ChatMessage_messageOverflowButton__8a84V");
+            allThreeDotsButtons[allThreeDotsButtons.length - 1].click();
+        });
 
-    //     //console.log(latestMessage);
-    // }
+        await this.page.locator(".DropdownMenuItem_destructive__yp0hK")
+            .setEnsureElementIsInTheViewport(false)
+            .setVisibility(null)
+            .click();
+
+        await delay(100);
+        
+        await this.page.evaluate((c) => {
+            let allMessageContainers = document.querySelectorAll(".ChatMessage_messageRow__7yIr2");
+            for(let i = allMessageContainers.length - 2; i > allMessageContainers.length - 1 - c; i--) {
+                allMessageContainers[i].click();
+            }
+        }, count)
+
+        await delay(100);
+
+        await this.page.locator(".ChatPageDeleteFooter_button__cWtyA")
+            .setEnsureElementIsInTheViewport(false)
+            .setVisibility(null)
+            .click();
+
+        await delay(100);
+
+        await this.page.locator(".Button_primaryDanger__IlN8P")
+            .setEnsureElementIsInTheViewport(false)
+            .setVisibility(null)
+            .click();        
+
+        
+    }
 
     async getBotNames() {
         let botNames = await this.page.$$eval(
@@ -303,6 +370,7 @@ class PoeClient {
     async changeBot(botName) {
         // Currently, Assistant doesn't seem to work, so this is simply a failsafe.
         if (botName === "Assistant" || botName === undefined) {
+            console.log(`Bot name was ${botName}`)
             this.botName = "ChatGPT";
         } else {
             this.botName = botName;

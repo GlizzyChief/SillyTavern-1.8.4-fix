@@ -2925,7 +2925,7 @@ async function getPoeClient(token, useCache = false) {
         if (poeClientCache[token]) {
             await poeClientCache[token]?.closeDriver();
         }
-        client = new PoeClient(token, "ChatGPT");
+        client = new PoeClient(token, POE_DEFAULT_BOT);
         let successfulltInitialized = await client.initializeDriver();
         if (!successfulltInitialized) {
             throw new Error(
@@ -2964,14 +2964,23 @@ app.post("/purge_poe", jsonParser, async (request, response) => {
         return response.sendStatus(401);
     }
 
-    //const bot = request.body.bot ?? POE_DEFAULT_BOT;
+    const bot = request.body.bot ?? POE_DEFAULT_BOT;
     const count = request.body.count ?? -1;
+
+    console.log(`!!!!!!!!!!!! NEED TO PURGE ${count} MESSAGES!`);
 
     try {
         const client = await getPoeClient(token, true);
 
+        if (
+            botNames[parseInt(bot)] !== client.botName &&
+            botNames[parseInt(bot)] !== undefined
+        ) {
+            await client.changeBot(botNames[parseInt(bot)]);
+        }
+
         if (count > 0) {
-            //Not sure what to do rn, so just ignore it in batch messages
+            await client.deleteMessages(count);
         } else {
             await client.clearContext();
         }
@@ -3009,8 +3018,8 @@ app.post("/generate_poe", jsonParser, async (request, response) => {
 
     const prompt = request.body.prompt;
     const bot = request.body.bot ?? POE_DEFAULT_BOT;
-    // Streaming not currently implemented
-    const streaming = /* request.body.streaming ?? */ false;
+    
+    const streaming =  request.body.streaming ??  false;
 
     let client;
 
@@ -3022,34 +3031,56 @@ app.post("/generate_poe", jsonParser, async (request, response) => {
     }
 
     if (streaming) {
+        await delay(300);
         try {
+            if (
+                botNames[parseInt(bot)] !== client.botName &&
+                botNames[parseInt(bot)] !== undefined
+            ) {
+                await client.changeBot(botNames[parseInt(bot)]);
+            }
+            await client.sendMessage(prompt);
+            
+            // necessary due to double jb issues
+            await delay(500);
+            
+            
             let reply = "";
-            for await (const mes of client.send_message(
-                bot,
-                prompt,
-                false,
-                60,
-                abortController.signal
-            )) {
+            while (!isGenerationStopped) {
                 if (response.headersSent === false) {
                     response.writeHead(200, {
                         "Content-Type": "text/plain;charset=utf-8",
                         "Transfer-Encoding": "chunked",
                         "Cache-Control": "no-transform",
-                        "X-Message-Id": String(mes.messageId),
+                        //"X-Message-Id": String(mes.messageId),
                     });
                 }
+                await delay(50);
 
+                
                 if (isGenerationStopped) {
                     console.error(
-                        "Streaming stopped by user. Closing websocket..."
+                        "Streaming stopped by user. Aborting the message and clearing the context..."
                     );
+                    await client.abortMessage();
+                    await client.clearContext();
                     break;
                 }
 
-                let newText = mes.text.substring(reply.length);
-                reply = mes.text;
+                let newReply = await client.getLatestMessageStreaming();
+
+                // Just a failsafe due to bot's cut-off name being registered as actual text.
+                if (newReply === "..." || newReply.length < 20) {
+                    await delay(100);
+                    continue;
+                }
+
+                
+                let newText = newReply.substring(reply.length);
+                
+                reply = newReply;
                 response.write(newText);
+                isGenerationStopped = !await client.isGenerating(true);
             }
             console.log(reply);
         } catch (err) {
@@ -3067,9 +3098,10 @@ app.post("/generate_poe", jsonParser, async (request, response) => {
                 messageId = mes.messageId;
             }*/
 
+
             if (
                 botNames[parseInt(bot)] !== client.botName &&
-                botNames[parseInt(bot) !== undefined]
+                botNames[parseInt(bot)] !== undefined
             ) {
                 await client.changeBot(botNames[parseInt(bot)]);
             }
@@ -3086,6 +3118,8 @@ app.post("/generate_poe", jsonParser, async (request, response) => {
             while (waitingForMessage) {
                 await delay(400);
                 let stillGenerating = await client.isGenerating();
+                console.log(`Still generating is: ${stillGenerating}`)
+                console.log(`Waiting for message is: ${waitingForMessage}`)
                 if (!stillGenerating) {
                     waitingForMessage = false;
                 }
@@ -3105,9 +3139,8 @@ app.post("/generate_poe", jsonParser, async (request, response) => {
             reply = await client.getLatestMessage();
 
             console.log(reply);
-            //client.disconnect_ws();
-            //response.set('X-Message-Id', String(messageId));
-            //return response.send({ 'reply': reply });
+            
+            await delay(200);
 
             // Temporary fix due to issues during parsing json on client side
             return response.send(reply);
@@ -3129,6 +3162,8 @@ app.post("/poe_suggest", jsonParser, async function (request, response) {
     if (!token) {
         return response.sendStatus(401);
     }
+
+    console.log("SUGGESTIONS CALLED ----------------------------")
 
     try {
         const bot = request.body.bot ?? POE_DEFAULT_BOT;
