@@ -38,6 +38,7 @@ If you've installed Chrome properly, i.e. using the official installer, then jus
 For getting it to work any other operating system, please contact me!
 
 ## Known issues
+- If `Expired token!` error is thrown out, and in the terminal `Poe failed to authenticate with the provided cookie - logout modal appeared out of nowhere!` is logged, simply connect again.
 - On Windows, sometimes it's necessary to put the browser into non-headless mode.
 - Performance depends somewhat on the device, currently averaging 6 seconds on PC and 12 seconds on android
 
