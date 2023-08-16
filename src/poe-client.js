@@ -1,5 +1,4 @@
-const DEFAULT_WINDOWS_PATH =
-    "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
+const DEFAULT_WINDOWS_PATH = "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
 const puppeteer = require("puppeteer-core");
 const { PuppeteerExtra } = require("puppeteer-extra");
 const StealthPlugin = require("puppeteer-extra-plugin-stealth");
@@ -43,7 +42,6 @@ class PoeClient {
             });
         } catch {
             try {
-
                 this.browser = await puppeteer.launch({
                     executablePath: DEFAULT_WINDOWS_PATH,
                     headless: false,
@@ -143,9 +141,9 @@ class PoeClient {
             return null;
         }
 
-        return NodeHtmlMarkdown.translate(
-            lastMessage
-        ).replaceAll("\\*", "*").replaceAll("_", "*");
+        return NodeHtmlMarkdown.translate(lastMessage)
+            .replaceAll("\\*", "*")
+            .replaceAll("_", "*");
     }
 
     async getLatestMessageStreaming() {
@@ -153,26 +151,22 @@ class PoeClient {
         // getting taken as the response to the RP.
         // Until a fix is found, I suggest just throttling it slightly
 
-    
-        
         //let messages = await this.driver.findElements(By.xpath('//div[contains(@class, "Message_botMessageBubble__CPGMI")]'));
         let lastMessage = await this.page.$$eval(
             ".Message_botMessageBubble__CPGMI",
             (allMessages) => {
                 return allMessages[allMessages.length - 1].childNodes[0]
-                    .innerHTML
+                    .innerHTML;
             }
         );
-
 
         if (lastMessage === "...") {
             return "";
         }
 
-
-        return NodeHtmlMarkdown.translate(
-            lastMessage
-        ).replaceAll("\\*", "*").replaceAll("_", "*");
+        return NodeHtmlMarkdown.translate(lastMessage)
+            .replaceAll("\\*", "*")
+            .replaceAll("_", "*");
     }
 
     async sendMessage(message) {
@@ -275,12 +269,8 @@ class PoeClient {
 
         //console.log("Currently in generating");
 
-        if (
-            (await this.page.$(
-                ".Message_noSignIcon__3f_KY"
-            )) !== null
-        ) {
-            throw new Error("ERROR: Token window exceeded!!!!!!!!!")
+        if ((await this.page.$(".Message_noSignIcon__3f_KY")) !== null) {
+            throw new Error("ERROR: Token window exceeded!!!!!!!!!");
         }
 
         if (
@@ -301,67 +291,120 @@ class PoeClient {
         let suggestedMessages = await this.page.$$eval(
             ".ChatMessageSuggestedReplies_suggestedRepliesContainer__JgW12",
             (allMessages) => {
-                return allMessages.map(message => message.childNodes[0].textContent);
+                return allMessages.map(
+                    (message) => message.childNodes[0].textContent
+                );
             }
         );
-
 
         if (suggestedMessages.length === 0) {
             return [];
         }
 
-        
         return suggestedMessages;
     }
 
-    
     async deleteMessages(count) {
-        
         await this.page.evaluate(() => {
-            let allThreeDotsButtons = document.querySelectorAll(".ChatMessage_messageOverflowButton__8a84V");
+            let allThreeDotsButtons = document.querySelectorAll(
+                ".ChatMessage_messageOverflowButton__8a84V"
+            );
             allThreeDotsButtons[allThreeDotsButtons.length - 1].click();
         });
 
-        await this.page.locator(".DropdownMenuItem_destructive__yp0hK")
+        await this.page
+            .locator(".DropdownMenuItem_destructive__yp0hK")
             .setEnsureElementIsInTheViewport(false)
             .setVisibility(null)
             .click();
 
         await delay(100);
-        
+
         await this.page.evaluate((c) => {
-            let allMessageContainers = document.querySelectorAll(".ChatMessage_messageRow__7yIr2");
-            for(let i = allMessageContainers.length - 2; i > allMessageContainers.length - 1 - c; i--) {
+            let allMessageContainers = document.querySelectorAll(
+                ".ChatMessage_messageRow__7yIr2"
+            );
+            for (
+                let i = allMessageContainers.length - 2;
+                i > allMessageContainers.length - 1 - c;
+                i--
+            ) {
                 allMessageContainers[i].click();
             }
-        }, count)
+        }, count);
 
         await delay(100);
 
-        await this.page.locator(".ChatPageDeleteFooter_button__cWtyA")
+        await this.page
+            .locator(".ChatPageDeleteFooter_button__cWtyA")
             .setEnsureElementIsInTheViewport(false)
             .setVisibility(null)
             .click();
 
         await delay(100);
 
-        await this.page.locator(".Button_primaryDanger__IlN8P")
+        await this.page
+            .locator(".Button_primaryDanger__IlN8P")
             .setEnsureElementIsInTheViewport(false)
             .setVisibility(null)
-            .click();        
-
-        
+            .click();
     }
 
     async getBotNames() {
+        await this.page.evaluate(() => {
+            document
+                .querySelectorAll(".PageWithSidebarNavItem_label__WUzi5")[3]
+                .click();
+        });
+
+        // Basically, scroll a bunch of times so that all bots are loaded.
+        // The scroll trigger element gets populated while loading, so if it's no longer loading then that means no new bots are going to
+        // be loaded
+        await this.page.waitForSelector(".InfiniteScroll_pagingTrigger__Egmr6");
+
+        //let stillMoreBotsToLoad = true;
+
+        let safetyCounter = 0;
+
+        // Temporary fix, since checking for loading of more bots is janky
+        // Basically, the loading animation appears and disappears almost instantly
+        // Although, this also means that we can safely iterate for a bit, since
+        // not a lot of latency is created.
+
+        while (/* stillMoreBotsToLoad || */ safetyCounter < 4) {
+            await this.page.evaluate(() => {
+                document
+                    .querySelector(".InfiniteScroll_pagingTrigger__Egmr6")
+                    .scrollIntoView();
+            });
+
+            /* await delay(100);
+
+            stillMoreBotsToLoad = await this.page.$eval(
+                ".InfiniteScroll_pagingTrigger__Egmr6",
+                (elem) => {
+                    return elem.childNodes.length > 0;
+                }
+            ); */
+
+            safetyCounter++;
+            await delay(400);
+        }
+
         let botNames = await this.page.$$eval(
-            ".BotHeader_title__q67To>div",
+            ".BotHeader_textContainer__W6BjF",
             (containers) => {
                 return containers.map(
                     (container) => container.childNodes[0].innerHTML
                 );
             }
         );
+
+        await this.page
+            .locator(".Modal_closeButton__ZYPm5")
+            .setEnsureElementIsInTheViewport(false)
+            .setVisibility(null)
+            .click();
 
         return Array.from(new Set(botNames));
     }
@@ -370,7 +413,7 @@ class PoeClient {
     async changeBot(botName) {
         // Currently, Assistant doesn't seem to work, so this is simply a failsafe.
         if (botName === "Assistant" || botName === undefined) {
-            console.log(`Bot name was ${botName}`)
+            console.log(`Bot name was ${botName}`);
             this.botName = "ChatGPT";
         } else {
             this.botName = botName;
