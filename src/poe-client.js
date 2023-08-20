@@ -96,7 +96,7 @@ class PoeClient {
 
         await this.page.goto(`https://poe.com/${this.botName}`);
 
-        await delay(5000);
+        await delay(700);
 
         // Looks like Poe just loves random popups. Why man, why...
         let allPopupsClosed = false;
