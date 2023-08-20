@@ -96,13 +96,21 @@ class PoeClient {
 
         await this.page.goto(`https://poe.com/${this.botName}`);
 
-        await delay(700);
-        if ((await this.page.$(".Modal_closeButton__ZYPm5")) !== null) {
-            let modalCloseButton = await this.page.waitForSelector(
-                ".Modal_closeButton__ZYPm5"
-            );
-            await modalCloseButton.click();
-            await delay(200);
+        await delay(5000);
+
+        // Looks like Poe just loves random popups. Why man, why...
+        let allPopupsClosed = false;
+        while (!allPopupsClosed) {
+            if ((await this.page.$(".Modal_closeButton__ZYPm5")) !== null) {
+                let modalCloseButton = await this.page.waitForSelector(
+                    ".Modal_closeButton__ZYPm5"
+                );
+                await modalCloseButton.click();
+                console.log("A popup was blocked!!");
+                await delay(400);
+            } else {
+                allPopupsClosed = true;
+            }
         }
 
         if (
@@ -114,6 +122,9 @@ class PoeClient {
             );
             return false;
         }
+
+        let title = await this.page.title();
+        console.log(`DEBUG: Current page title: ${title}`);
 
         return true;
     }
@@ -352,9 +363,19 @@ class PoeClient {
 
     async getBotNames() {
         await this.page.evaluate(() => {
-            document
-                .querySelectorAll(".PageWithSidebarNavItem_label__WUzi5")[3]
-                .click();
+            if (
+                document.querySelectorAll(
+                    ".PageWithSidebarNavItem_label__WUzi5"
+                )[3]?.childNodes[1]?.textContent === "All your bots"
+            ) {
+                document
+                    .querySelectorAll(".PageWithSidebarNavItem_label__WUzi5")[3]
+                    .click();
+            } else {
+                document
+                    .querySelectorAll(".PageWithSidebarNavItem_label__WUzi5")[2]
+                    .click();
+            }
         });
 
         // Basically, scroll a bunch of times so that all bots are loaded.
