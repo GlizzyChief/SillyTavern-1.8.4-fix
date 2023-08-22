@@ -354,11 +354,20 @@ class PoeClient {
 
         await delay(100);
 
+        // After the first message, poe displays a pop up modal to confirm the deletion of the last two messages.
+        // Apparently, Poe updated the button classes in said modal, making the previous method to confirm the deletion not work.
+        // This is a possible solution. It worked for me on Windows and Termux, although I don't know how clean it is, or if it will cause more delays in the response.
+        const deleteButtons = await this.page.$$('button[class*="Button_danger__zI3OH"]')
+        // console.log(deleteButtons);
+        await deleteButtons[1].click();
+        
+        /*
         await this.page
             .locator(".Button_primaryDanger__IlN8P")
             .setEnsureElementIsInTheViewport(false)
             .setVisibility(null)
             .click();
+        */
     }
 
     async getBotNames() {
