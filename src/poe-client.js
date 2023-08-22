@@ -354,11 +354,15 @@ class PoeClient {
 
         await delay(100);
 
-        await this.page
-            .locator(".Button_primaryDanger__IlN8P")
-            .setEnsureElementIsInTheViewport(false)
-            .setVisibility(null)
-            .click();
+        // After the first message, poe displays a pop up modal to confirm the deletion of the last two messages.
+        // Apparently, Poe updated the button classes in said modal, making the previous method to confirm the deletion not work.
+        // HUGE thanks to LegendPoet for providing this fix!!!
+
+        await this.page.waitForSelector(".Button_danger__zI3OH");
+        
+        await this.page.evaluate(() => {
+            document.querySelectorAll(".Button_danger__zI3OH")[1].click();
+        });
     }
 
     async getBotNames() {
