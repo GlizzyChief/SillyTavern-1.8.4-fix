@@ -1,4 +1,5 @@
-const DEFAULT_WINDOWS_PATH = "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
+const DEFAULT_WINDOWS_PATH =
+    "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
 const puppeteer = require("puppeteer-core");
 const { PuppeteerExtra } = require("puppeteer-extra");
 const StealthPlugin = require("puppeteer-extra-plugin-stealth");
@@ -15,13 +16,13 @@ puppeteerWithPlugin.use(stealthPlugin);
 class PoeClient {
     browser = null;
     page = null;
-    botName = "ChatGPT";
+    botName = "gptforst";
 
     constructor(poeCookie, botName) {
         this.poeCookie = poeCookie;
         // Currently, Assistant doesn't seem to work. This is simply a failsafe
         if (botName === "Assistant") {
-            this.botname = "ChatGPT";
+            this.botname = "gptforst";
         } else {
             this.botName = botName;
         }
@@ -47,10 +48,18 @@ class PoeClient {
                     headless: false,
                 });
             } catch {
-                this.browser = await puppeteer.launch({
-                    executablePath: "/usr/bin/chromium",
-                    headless: false,
-                });
+                try {
+                    this.browser = await puppeteer.launch({
+                        executablePath:
+                            "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
+                        headless: false,
+                    });
+                } catch {
+                    this.browser = await puppeteer.launch({
+                        executablePath: "/usr/bin/chromium",
+                        headless: false,
+                    });
+                }
             }
         }
 
@@ -92,7 +101,7 @@ class PoeClient {
         await delay(1000);
 
         // Just in case!
-        if (this.botName === undefined) this.botName = "ChatGPT";
+        if (this.botName === undefined) this.botName = "gptforst";
 
         await this.page.goto(`https://poe.com/${this.botName}`);
 
@@ -358,10 +367,16 @@ class PoeClient {
         // Apparently, Poe updated the button classes in said modal, making the previous method to confirm the deletion not work.
         // HUGE thanks to LegendPoet for providing this fix!!!
 
-        await this.page.waitForSelector(".Button_danger__zI3OH");
-        
+        await this.page.waitForSelector(
+            "div.MessageDeleteConfirmationModal_options__RVyZn>button.Button_danger__zI3OH"
+        );
+
         await this.page.evaluate(() => {
-            document.querySelectorAll(".Button_danger__zI3OH")[1].click();
+            document
+                .querySelector(
+                    "div.MessageDeleteConfirmationModal_options__RVyZn>button.Button_danger__zI3OH"
+                )
+                .click();
         });
     }
 
@@ -370,7 +385,7 @@ class PoeClient {
             if (
                 document.querySelectorAll(
                     ".PageWithSidebarNavItem_label__WUzi5"
-                )[3]?.childNodes[1]?.textContent === "All your bots"
+                )[3]?.childNodes[1]?.textContent === "Your bots"
             ) {
                 document
                     .querySelectorAll(".PageWithSidebarNavItem_label__WUzi5")[3]

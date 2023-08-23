@@ -2910,7 +2910,7 @@ app.post("/deletegroup", jsonParser, async (request, response) => {
     return response.send({ ok: true });
 });
 
-const POE_DEFAULT_BOT = "ChatGPT";
+const POE_DEFAULT_BOT = "gptforst";
 
 const poeClientCache = {};
 
@@ -2928,6 +2928,7 @@ async function getPoeClient(token, useCache = false) {
         client = new PoeClient(token, POE_DEFAULT_BOT);
         let successfulltInitialized = await client.initializeDriver();
         if (!successfulltInitialized) {
+            await client.closeDriver();
             throw new Error(
                 "Poe failed to initialize. Please check the terminal for additional info!"
             );
@@ -2953,6 +2954,7 @@ app.post("/status_poe", jsonParser, async (request, response) => {
         return response.send({ bot_names: botNames });
     } catch (err) {
         console.error(err);
+
         return response.sendStatus(401);
     }
 });
@@ -3018,8 +3020,8 @@ app.post("/generate_poe", jsonParser, async (request, response) => {
 
     const prompt = request.body.prompt;
     const bot = request.body.bot ?? POE_DEFAULT_BOT;
-    
-    const streaming =  request.body.streaming ??  false;
+
+    const streaming = request.body.streaming ?? false;
 
     let client;
 
@@ -3040,11 +3042,10 @@ app.post("/generate_poe", jsonParser, async (request, response) => {
                 await client.changeBot(botNames[parseInt(bot)]);
             }
             await client.sendMessage(prompt);
-            
+
             // necessary due to double jb issues
             await delay(80);
-            
-            
+
             let reply = "";
             while (!isGenerationStopped) {
                 if (response.headersSent === false) {
@@ -3057,7 +3058,6 @@ app.post("/generate_poe", jsonParser, async (request, response) => {
                 }
                 await delay(50);
 
-                
                 if (isGenerationStopped) {
                     console.error(
                         "Streaming stopped by user. Aborting the message and clearing the context..."
@@ -3075,12 +3075,11 @@ app.post("/generate_poe", jsonParser, async (request, response) => {
                     continue;
                 }
 
-                
                 let newText = newReply.substring(reply.length);
-                
+
                 reply = newReply;
                 response.write(newText);
-                isGenerationStopped = !await client.isGenerating(true);
+                isGenerationStopped = !(await client.isGenerating(true));
             }
             console.log(reply);
         } catch (err) {
@@ -3097,7 +3096,6 @@ app.post("/generate_poe", jsonParser, async (request, response) => {
                 reply = mes.text;
                 messageId = mes.messageId;
             }*/
-
 
             if (
                 botNames[parseInt(bot)] !== client.botName &&
@@ -3118,8 +3116,8 @@ app.post("/generate_poe", jsonParser, async (request, response) => {
             while (waitingForMessage) {
                 await delay(400);
                 let stillGenerating = await client.isGenerating();
-                console.log(`Still generating is: ${stillGenerating}`)
-                console.log(`Waiting for message is: ${waitingForMessage}`)
+                console.log(`Still generating is: ${stillGenerating}`);
+                console.log(`Waiting for message is: ${waitingForMessage}`);
                 if (!stillGenerating) {
                     waitingForMessage = false;
                 }
@@ -3139,7 +3137,7 @@ app.post("/generate_poe", jsonParser, async (request, response) => {
             reply = await client.getLatestMessage();
 
             console.log(reply);
-            
+
             await delay(200);
 
             // Temporary fix due to issues during parsing json on client side
@@ -3163,7 +3161,7 @@ app.post("/poe_suggest", jsonParser, async function (request, response) {
         return response.sendStatus(401);
     }
 
-    console.log("SUGGESTIONS CALLED ----------------------------")
+    console.log("SUGGESTIONS CALLED ----------------------------");
 
     try {
         const bot = request.body.bot ?? POE_DEFAULT_BOT;
