@@ -326,7 +326,7 @@ class PoeClient {
     async deleteMessages(count) {
         await this.page.evaluate(() => {
             let allThreeDotsButtons = document.querySelectorAll(
-                ".ChatMessage_messageOverflowButton__8a84V"
+                ".ChatMessageOverflowButton_overflowButton__Yn0Lo"
             );
             allThreeDotsButtons[allThreeDotsButtons.length - 1].click();
         });
@@ -341,7 +341,7 @@ class PoeClient {
 
         await this.page.evaluate((c) => {
             let allMessageContainers = document.querySelectorAll(
-                ".ChatMessage_messageRow__7yIr2"
+                ".ChatMessage_messageRow__WMtnL"
             );
             for (
                 let i = allMessageContainers.length - 2;
