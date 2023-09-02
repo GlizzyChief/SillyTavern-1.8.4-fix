@@ -1,5 +1,4 @@
-const DEFAULT_WINDOWS_PATH =
-    "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
+const DEFAULT_WINDOWS_PATH = "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
 const puppeteer = require("puppeteer-core");
 const { PuppeteerExtra } = require("puppeteer-extra");
 const StealthPlugin = require("puppeteer-extra-plugin-stealth");
@@ -295,7 +294,7 @@ class PoeClient {
 
         if (
             (await this.page.$(
-                ".ChatMessageSuggestedReplies_suggestedRepliesContainer__JgW12"
+                ".ChatMessageSuggestedReplies_suggestedRepliesContainer__v6sxJ"
             )) !== null
         ) {
             return false;
@@ -309,7 +308,7 @@ class PoeClient {
         await delay(5000);
 
         let suggestedMessages = await this.page.$$eval(
-            ".ChatMessageSuggestedReplies_suggestedRepliesContainer__JgW12",
+            ".ChatMessageSuggestedReplies_suggestedRepliesContainer__v6sxJ",
             (allMessages) => {
                 return allMessages.map(
                     (message) => message.childNodes[0].textContent

@@ -32,17 +32,17 @@ For using on Windows, simply make sure to install chrome. ALTERNATIVELY, Chromiu
 Then, download the project either as .zip or using git (same as above).
 If you have Chrome installed anywhere othen than `C:\Windows\Program Files\Google\Chrome\chrome.exe` (the default path) open `src/poe-client.js` with Notepad, and on the first line replace `C:\Windows\Program Files\Google\Chrome\chrome.exe` with the path to your chrome.exe and simply run start.bat!
 To get the path, right click on your chrome shortcut. Then, press "Open file location". Then, in the opened folder, find "chrome.exe", and, while holding shift, right click on it. In the opened menu, press "Copy path". MAKE SURE TO ADD EXTRA \ to all \ IN THE PATH!
-If you've installed Chrome properly, i.e. using the official installer, then just run start.bat.
+!! If you've installed Chrome properly, i.e. using the official installer, then just run start.bat.
 
 ## Other OSes
 For getting it to work any other operating system, please contact me!
 
 ## Known issues
-- If `Expired token!` error is thrown out, and in the terminal `Poe failed to authenticate with the provided cookie - logout modal appeared out of nowhere!` is logged, simply connect again.
 - On Windows, sometimes it's necessary to put the browser into non-headless mode.
 - Performance depends somewhat on the device, currently averaging 6 seconds on PC and 12 seconds on android
 
 ## Recent fixes
+- The bot now tries to connect multiple times before throwing out the expired API token error. This is made to alleviate the issue of Poe sometimes falsely marking the user as logged out, forcing the user to press Connect again
 - Fixed issues with characters responding with '{'reply': 'some text'}'
 - Fixed characters responding with unfinished messages or triple dots
 - Fixed issues caused by Poe putting an ad modal when opening some bots

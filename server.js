@@ -2925,10 +2925,28 @@ async function getPoeClient(token, useCache = false) {
         if (poeClientCache[token]) {
             await poeClientCache[token]?.closeDriver();
         }
-        client = new PoeClient(token, POE_DEFAULT_BOT);
-        let successfulltInitialized = await client.initializeDriver();
+
+        // Attempt to instantialize the client 5 times,
+        // to automate the handling of Poe sometimes
+        // marking the user as logged out.
+        // Most likely going to be a temporary fix,
+        // as properly closing down the sessions, or using
+        // an incognito context should be better anyway
+
+        let successfulltInitialized = false;
+        for (let triesLeft = 5; triesLeft > 0; triesLeft--) {
+            client = new PoeClient(token, POE_DEFAULT_BOT);
+            successfulltInitialized = await client.initializeDriver();
+            if (!successfulltInitialized) {
+                await client.closeDriver();
+                continue;
+            }
+            break;
+        }
         if (!successfulltInitialized) {
-            await client.closeDriver();
+            console.log(
+                "ERROR: failed to connect after 5 tries! Please double-check that your cookie is correct, or try another cookie!"
+            );
             throw new Error(
                 "Poe failed to initialize. Please check the terminal for additional info!"
             );
