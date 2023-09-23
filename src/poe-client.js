@@ -1,8 +1,11 @@
-const DEFAULT_WINDOWS_PATH = "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
+const DEFAULT_WINDOWS_PATH =
+    "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
 const puppeteer = require("puppeteer-core");
 const { PuppeteerExtra } = require("puppeteer-extra");
 const StealthPlugin = require("puppeteer-extra-plugin-stealth");
 const { NodeHtmlMarkdown } = require("node-html-markdown");
+const Turndown = require("turndown");
+const TurndownService = require("turndown");
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -144,7 +147,6 @@ class PoeClient {
 
         await delay(1000);
         console.log("before last message");
-        //let messages = await this.driver.findElements(By.xpath('//div[contains(@class, "Message_botMessageBubble__CPGMI")]'));
         let lastMessage = await this.page.$$eval(
             ".Message_botMessageBubble__CPGMI",
             (allMessages) => {
@@ -160,17 +162,15 @@ class PoeClient {
             return null;
         }
 
-        return NodeHtmlMarkdown.translate(lastMessage)
-            .replaceAll("\\*", "*")
-            .replaceAll("_", "*");
+        let turndown = new Turndown();
+
+        return turndown
+            .turndown(lastMessage.replaceAll("\n", "\\n"))
+            .replaceAll("\\\\n", "\n")
+            .replaceAll("\\", "");
     }
 
     async getLatestMessageStreaming() {
-        // this creates issues with jailbreak message being sent twice & the response of the second JB
-        // getting taken as the response to the RP.
-        // Until a fix is found, I suggest just throttling it slightly
-
-        //let messages = await this.driver.findElements(By.xpath('//div[contains(@class, "Message_botMessageBubble__CPGMI")]'));
         let lastMessage = await this.page.$$eval(
             ".Message_botMessageBubble__CPGMI",
             (allMessages) => {
@@ -183,15 +183,17 @@ class PoeClient {
             return "";
         }
 
-        return NodeHtmlMarkdown.translate(lastMessage)
-            .replaceAll("\\*", "*")
-            .replaceAll("_", "*");
+        let turndown = new Turndown();
+
+        return turndown
+            .turndown(lastMessage.replaceAll("\n", "\\n"))
+            .replaceAll("\\\\n", "\n")
+            .replaceAll("\\", "");
     }
 
     async sendMessage(message) {
         try {
             //searching via classname raises errors from time to time for some reason
-            //let inputForm = await this.driver.findElement(By.css("textarea"));
 
             if (this.page.$("textarea") === null) {
                 throw new Error("Input element not found! Aborting.");
@@ -218,8 +220,6 @@ class PoeClient {
 
             let waitingForMessage = true;
             while (waitingForMessage) {
-                //let messages = await this.driver.findElements(By.xpath('//div[contains(@class, "Message_botMessageBubble__CPGMI")]'));
-
                 if (
                     (await this.page.$(".Message_botMessageBubble__CPGMI")) ===
                     null
@@ -286,8 +286,6 @@ class PoeClient {
         // a bit of throttling fixes it
         if (!streaming) await delay(150);
 
-        //console.log("Currently in generating");
-
         if ((await this.page.$(".Message_noSignIcon__3f_KY")) !== null) {
             throw new Error("ERROR: Token window exceeded!!!!!!!!!");
         }
@@ -324,11 +322,33 @@ class PoeClient {
     }
 
     async deleteMessages(count) {
+        // Poe decided not to show triple dot buttons for long messages, rendering it only if the message header
+        // is in the view. This scrolls to it, forcing it to be shown before initializing further operations.
         await this.page.evaluate(() => {
-            let allThreeDotsButtons = document.querySelectorAll(
-                ".ChatMessageOverflowButton_overflowButton__Yn0Lo"
+            let messageElements = document.querySelectorAll(
+                ".ChatMessage_chatMessage__BmN0M"
             );
-            allThreeDotsButtons[allThreeDotsButtons.length - 1].click();
+            messageElements[messageElements.length - 1].scrollIntoView();
+
+            // Poe can sometimes lose connection to its servers, creating an element unusable for purging
+            // The conversation, creating issues in purge logic. This code moves the focus to an element
+            // above the last if such an error is detected.
+            if (
+                document.querySelectorAll(".Message_errorBubble__XFYk8")
+                    .length === 0
+            ) {
+                let allThreeDotsButtons = document.querySelectorAll(
+                    ".ChatMessageOverflowButton_overflowButton__Yn0Lo"
+                );
+                allThreeDotsButtons[allThreeDotsButtons.length - 1].click();
+            } else {
+                messageElements[messageElements.length - 2].scrollIntoView();
+                let allThreeDotsButtons = document.querySelectorAll(
+                    ".ChatMessageOverflowButton_overflowButton__Yn0Lo"
+                );
+                allThreeDotsButtons[allThreeDotsButtons.length - 2].click();
+                count += 1;
+            }
         });
 
         await this.page

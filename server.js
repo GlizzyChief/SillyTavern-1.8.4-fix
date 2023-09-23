@@ -3078,10 +3078,10 @@ app.post("/generate_poe", jsonParser, async (request, response) => {
 
                 if (isGenerationStopped) {
                     console.error(
-                        "Streaming stopped by user. Aborting the message and clearing the context..."
+                        "Streaming stopped by user. Aborting the message and resetting to jailbroken state..."
                     );
                     await client.abortMessage();
-                    await client.clearContext();
+                    await client.deleteMessages(2);
                     break;
                 }
 
