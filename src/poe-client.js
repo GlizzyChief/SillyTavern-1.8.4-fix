@@ -3,7 +3,6 @@ const DEFAULT_WINDOWS_PATH =
 const puppeteer = require("puppeteer-core");
 const { PuppeteerExtra } = require("puppeteer-extra");
 const StealthPlugin = require("puppeteer-extra-plugin-stealth");
-const { NodeHtmlMarkdown } = require("node-html-markdown");
 const Turndown = require("turndown");
 const TurndownService = require("turndown");
 
