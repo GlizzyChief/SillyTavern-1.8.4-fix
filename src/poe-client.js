@@ -3,8 +3,8 @@ const DEFAULT_WINDOWS_PATH =
 const puppeteer = require("puppeteer-core");
 const { PuppeteerExtra } = require("puppeteer-extra");
 const StealthPlugin = require("puppeteer-extra-plugin-stealth");
-const Turndown = require("turndown");
-const TurndownService = require("turndown");
+const { NodeHtmlMarkdown } = require("node-html-markdown");
+
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -161,12 +161,9 @@ class PoeClient {
             return null;
         }
 
-        let turndown = new Turndown();
-
-        return turndown
-            .turndown(lastMessage.replaceAll("\n", "\\n"))
-            .replaceAll("\\\\n", "\n")
-            .replaceAll("\\", "");
+       return NodeHtmlMarkdown.translate(lastMessage)
+            .replaceAll("\\*", "*")
+            .replaceAll("_", "*");
     }
 
     async getLatestMessageStreaming() {
@@ -182,12 +179,9 @@ class PoeClient {
             return "";
         }
 
-        let turndown = new Turndown();
-
-        return turndown
-            .turndown(lastMessage.replaceAll("\n", "\\n"))
-            .replaceAll("\\\\n", "\n")
-            .replaceAll("\\", "");
+        return NodeHtmlMarkdown.translate(lastMessage)
+            .replaceAll("\\*", "*")
+            .replaceAll("_", "*");
     }
 
     async sendMessage(message) {
