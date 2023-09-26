@@ -199,7 +199,9 @@ class PoeClient {
             }
 
             await this.page.evaluate((message) => {
-                document.querySelector("textarea").value = message;
+                let tarea = document.querySelector("textarea");
+                tarea.click();
+                tarea.value = message;
             }, message);
 
             let inputForm = await this.page.$("textarea");
@@ -400,19 +402,9 @@ class PoeClient {
 
     async getBotNames() {
         await this.page.evaluate(() => {
-            if (
-                document.querySelectorAll(
-                    ".PageWithSidebarNavItem_label__WUzi5"
-                )[3]?.childNodes[1]?.textContent === "Your bots"
-            ) {
-                document
-                    .querySelectorAll(".PageWithSidebarNavItem_label__WUzi5")[3]
-                    .click();
-            } else {
-                document
-                    .querySelectorAll(".PageWithSidebarNavItem_label__WUzi5")[2]
-                    .click();
-            }
+            [...document.querySelectorAll(".SidebarItem_label__8igXL")]
+                .filter((_) => _.innerHTML === "Your bots")[0]
+                .click();
         });
 
         // Basically, scroll a bunch of times so that all bots are loaded.
@@ -458,11 +450,9 @@ class PoeClient {
             }
         );
 
-        await this.page
-            .locator(".Modal_closeButton__ZYPm5")
-            .setEnsureElementIsInTheViewport(false)
-            .setVisibility(null)
-            .click();
+        await this.page.evaluate(() => {
+            document.querySelector(".Modal_closeButton__ZYPm5").click();
+        });
 
         return Array.from(new Set(botNames));
     }
