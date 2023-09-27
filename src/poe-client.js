@@ -4,7 +4,7 @@ const puppeteer = require("puppeteer-core");
 const { PuppeteerExtra } = require("puppeteer-extra");
 const StealthPlugin = require("puppeteer-extra-plugin-stealth");
 const Turndown = require("turndown");
-const TurndownService = require("turndown");
+const randomUseragent = require("random-useragent");
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -36,12 +36,15 @@ class PoeClient {
     }
 
     async initializeDriver() {
+        let isMobile = false;
+
         try {
             this.browser = await puppeteer.launch({
                 executablePath:
                     "/data/data/com.termux/files/usr/bin/chromium-browser",
                 headless: "new",
             });
+            isMobile = true;
         } catch {
             try {
                 this.browser = await puppeteer.launch({
@@ -66,18 +69,26 @@ class PoeClient {
 
         this.page = await this.browser.newPage();
 
+        if (isMobile) {
+            await this.page.emulate(puppeteer.KnownDevices["Galaxy S9+"]);
+        }
+
+        let _ = randomUseragent.getRandom();
+
         await this.page.evaluateOnNewDocument(() => {
             Object.defineProperty(navigator, "webdriver", {
                 value: false,
                 writable: false,
             });
+
             if (navigator.platform === "Win32") {
                 Object.defineProperty(navigator, "userAgent", {
-                    value: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
+                    value: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36",
                 });
             } else {
                 Object.defineProperty(navigator, "userAgent", {
-                    value: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36",
+                    //value: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36",
+                    value: _,
                 });
             }
             Object.defineProperty(window, "chrome", {
@@ -88,18 +99,37 @@ class PoeClient {
                 value: ["en-US", "en"],
                 writable: false,
             });
+            // Object.defineProperty(navigator, "appVersion", {
+            //     value: "5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36",
+            //     writable: false,
+            // });
         });
 
         // await this.page.goto("https://bot.sannysoft.com/");
 
         // await delay(12000);
 
-        await this.page.goto("https://poe.com");
+        await this.page.goto("https://poe.com/", {
+            waitUntil: "networkidle0",
+        });
         await delay(1000);
         await this.page.setCookie({ name: "p-b", value: this.poeCookie });
         await delay(1000);
         await this.page.goto("https://poe.com");
         await delay(1000);
+
+        await this.page.goto("https://poe.com/settings", {
+            waitUntil: "networkidle0",
+        });
+
+        await this.page.evaluate(() => {
+            let label = document.querySelector(".ToggleSwitch_slider__dcLHT");
+            if (label.parentElement.childNodes[0].checked) {
+                label.click();
+            }
+        });
+
+        await delay(200);
 
         // Just in case!
         if (this.botName === undefined) this.botName = "gptforst";
@@ -194,14 +224,17 @@ class PoeClient {
         try {
             //searching via classname raises errors from time to time for some reason
 
+            let title = await this.page.title();
+            console.log(`DEBUG: Current page title during SEND: ${title}`);
+
             if (this.page.$("textarea") === null) {
                 throw new Error("Input element not found! Aborting.");
             }
 
             await this.page.evaluate((message) => {
                 let tarea = document.querySelector("textarea");
-                tarea.click();
                 tarea.value = message;
+                tarea.click();
             }, message);
 
             let inputForm = await this.page.$("textarea");
@@ -209,6 +242,12 @@ class PoeClient {
             await delay(500);
 
             await inputForm.press("Space");
+
+            console.log(
+                `After test manipulation: ${await this.page.evaluate(
+                    "document.querySelector('.ChatMessageSendButton_sendButton__OMyK1').disabled"
+                )}`
+            );
 
             await delay(5);
             await inputForm.press("Backspace");
