@@ -5,6 +5,9 @@ It can be used the same way as SillyTavern 1.8.4. Just input your p-b cookie, th
 
 # Instructions
 
+IMPORTANT!!!
+Before moving further, please disable "Try to open links in app" in Poe settings (poe.com/settings). Alternatively, just conect 2 times in a row. This must be done only once for each account.
+
 NOTE: Please select ChatPGT as the model. Choosing Assistant automatically switches to ChatGPT, but still please do so manually.
 
 ## Android
