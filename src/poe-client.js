@@ -123,7 +123,7 @@ class PoeClient {
         });
 
         await this.page.evaluate(() => {
-            let label = document.querySelector(".ToggleSidebarButton_button__2yFLU");
+            let label = document.querySelector(".ToggleSwitch_slider__ih5sC");
             if (label.parentElement.childNodes[0].checked) {
                 label.click();
             }
@@ -141,9 +141,9 @@ class PoeClient {
         // Looks like Poe just loves random popups. Why man, why...
         let allPopupsClosed = false;
         while (!allPopupsClosed) {
-            if ((await this.page.$(".Modal_closeButton__GycnR")) !== null) {
+            if ((await this.page.$(".Modal_closeButton__ZYPm5")) !== null) {
                 let modalCloseButton = await this.page.waitForSelector(
-                    ".Modal_closeButton__GycnR"
+                    ".Modal_closeButton__ZYPm5"
                 );
                 await modalCloseButton.click();
                 console.log("A popup was blocked!!");
@@ -154,11 +154,11 @@ class PoeClient {
         }
 
         if (
-            (await this.page.$(".LoggedOutBotInfoPage_appButton__UO6NU")) !==
+            (await this.page.$(".LoggedOutBotInfoPage_appButton__DZ5ol")) !==
             null
         ) {
             console.log(
-                "Poe.com did not authenticate with the provided cookie - logged out modal appeared out of nowhere!"
+                "Poe.com did not authenticate with the provided cookie - Logged out wrapper was present on the page!"
             );
             return false;
         }
@@ -257,7 +257,7 @@ class PoeClient {
             await inputForm.press("Enter");
 
             await delay(100);
-      
+
             let waitingForMessage = true;
             while (waitingForMessage) {
                 if (
@@ -326,13 +326,13 @@ class PoeClient {
         // a bit of throttling fixes it
         if (!streaming) await delay(150);
 
-        if ((await this.page.$(".Message_noSignIcon__3f_KY")) !== null) {
+        if ((await this.page.$(".Message_noSignIcon__11Dy5")) !== null) {
             throw new Error("ERROR: Token window exceeded!!!!!!!!!");
         }
 
         if (
             (await this.page.$(
-                ".ChatMessageSuggestedReplies_suggestedRepliesContainer__hXaLp"
+                ".ChatMessageSuggestedReplies_suggestedReply__dmJO1"
             )) !== null
         ) {
             return false;
@@ -346,7 +346,7 @@ class PoeClient {
         await delay(5000);
 
         let suggestedMessages = await this.page.$$eval(
-            ".ChatMessageSuggestedReplies_suggestedRepliesContainer__hXaLp",
+            ".ChatMessageSuggestedReplies_suggestedReply__dmJO1",
             (allMessages) => {
                 return allMessages.map(
                     (message) => message.childNodes[0].textContent
@@ -374,17 +374,17 @@ class PoeClient {
             // The conversation, creating issues in purge logic. This code moves the focus to an element
             // above the last if such an error is detected.
             if (
-                document.querySelectorAll(".Message_errorBubble__XFYk8")
+                document.querySelectorAll(".Message_errorBubble__Bl92G")
                     .length === 0
             ) {
                 let allThreeDotsButtons = document.querySelectorAll(
-                    ".ChatMessageOverflowButton_overflowButton__VGVM_"
+                    ".ChatMessageOverflowButton_overflowButtonWrapper__gzb2s"
                 );
                 allThreeDotsButtons[allThreeDotsButtons.length - 1].click();
             } else {
                 messageElements[messageElements.length - 2].scrollIntoView();
                 let allThreeDotsButtons = document.querySelectorAll(
-                    ".ChatMessageOverflowButton_overflowButton__VGVM_"
+                    ".ChatMessageOverflowButton_overflowButtonWrapper__gzb2s"
                 );
                 allThreeDotsButtons[allThreeDotsButtons.length - 2].click();
                 count += 1;
@@ -492,16 +492,16 @@ class PoeClient {
         await this.page.evaluate(() => {
             document.querySelector(".Modal_closeButton__GycnR").click();
         });
-        console.log(botNames);
+
         return Array.from(new Set(botNames));
     }
 
     // No error handling currently implemented for non-existing bots :/
     async changeBot(botName) {
         // Currently, Assistant doesn't seem to work, so this is simply a failsafe.
-        if (botName === "Assistant" || botName === undefined) {
+        if (botName === undefined) {
             console.log(`Bot name was ${botName}`);
-            this.botName = "Assistant";
+            this.botName = "ChatGPT";
         } else {
             this.botName = botName;
         }
