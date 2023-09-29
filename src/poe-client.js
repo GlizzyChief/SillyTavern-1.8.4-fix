@@ -123,7 +123,7 @@ class PoeClient {
         });
 
         await this.page.evaluate(() => {
-            let label = document.querySelector(".ToggleSwitch_slider__dcLHT");
+            let label = document.querySelector(".ToggleSidebarButton_button__2yFLU");
             if (label.parentElement.childNodes[0].checked) {
                 label.click();
             }
@@ -141,9 +141,9 @@ class PoeClient {
         // Looks like Poe just loves random popups. Why man, why...
         let allPopupsClosed = false;
         while (!allPopupsClosed) {
-            if ((await this.page.$(".Modal_closeButton__ZYPm5")) !== null) {
+            if ((await this.page.$(".Modal_closeButton__GycnR")) !== null) {
                 let modalCloseButton = await this.page.waitForSelector(
-                    ".Modal_closeButton__ZYPm5"
+                    ".Modal_closeButton__GycnR"
                 );
                 await modalCloseButton.click();
                 console.log("A popup was blocked!!");
@@ -177,7 +177,7 @@ class PoeClient {
         await delay(1000);
         console.log("before last message");
         let lastMessage = await this.page.$$eval(
-            ".Message_botMessageBubble__CPGMI",
+            ".Message_botMessageBubble__aYctV",
             (allMessages) => {
                 return allMessages[allMessages.length - 1].childNodes[0]
                     .innerHTML;
@@ -201,7 +201,7 @@ class PoeClient {
 
     async getLatestMessageStreaming() {
         let lastMessage = await this.page.$$eval(
-            ".Message_botMessageBubble__CPGMI",
+            ".Message_botMessageBubble__aYctV",
             (allMessages) => {
                 return allMessages[allMessages.length - 1].childNodes[0]
                     .innerHTML;
@@ -245,7 +245,7 @@ class PoeClient {
 
             console.log(
                 `After test manipulation: ${await this.page.evaluate(
-                    "document.querySelector('.ChatMessageSendButton_sendButton__OMyK1').disabled"
+                    "document.querySelector('.ChatMessageSendButton_sendButton__4ZyI4').disabled"
                 )}`
             );
 
@@ -257,11 +257,11 @@ class PoeClient {
             await inputForm.press("Enter");
 
             await delay(100);
-
+      
             let waitingForMessage = true;
             while (waitingForMessage) {
                 if (
-                    (await this.page.$(".Message_botMessageBubble__CPGMI")) ===
+                    (await this.page.$(".Message_botMessageBubble__aYctV")) ===
                     null
                 ) {
                     await delay(5);
@@ -269,7 +269,7 @@ class PoeClient {
                 }
 
                 let lastMessage = await this.page.$$eval(
-                    ".Message_botMessageBubble__CPGMI",
+                    ".Message_botMessageBubble__aYctV",
                     (allMessages) => {
                         return allMessages[allMessages.length - 1].innerHTML;
                     }
@@ -298,14 +298,14 @@ class PoeClient {
         if (!stillGenerating) return false;
 
         if (
-            (await this.page.$(".ChatStopMessageButton_stopButton__LWNj6")) ===
+            (await this.page.$(".ChatStopMessageButton_stopButton__QOW41")) ===
             null
         ) {
             return false;
         }
 
         await this.page
-            .locator(".ChatStopMessageButton_stopButton__LWNj6")
+            .locator(".ChatStopMessageButton_stopButton__QOW41")
             .click();
 
         await delay(100);
@@ -316,7 +316,7 @@ class PoeClient {
         let stillGenerating = await this.isGenerating();
         if (stillGenerating) await this.abortMessage();
 
-        await this.page.locator(".ChatBreakButton_button__EihE0").click();
+        await this.page.locator(".ChatBreakButton_button__zyEye").click();
 
         return true;
     }
@@ -332,7 +332,7 @@ class PoeClient {
 
         if (
             (await this.page.$(
-                ".ChatMessageSuggestedReplies_suggestedRepliesContainer__v6sxJ"
+                ".ChatMessageSuggestedReplies_suggestedRepliesContainer__hXaLp"
             )) !== null
         ) {
             return false;
@@ -346,7 +346,7 @@ class PoeClient {
         await delay(5000);
 
         let suggestedMessages = await this.page.$$eval(
-            ".ChatMessageSuggestedReplies_suggestedRepliesContainer__v6sxJ",
+            ".ChatMessageSuggestedReplies_suggestedRepliesContainer__hXaLp",
             (allMessages) => {
                 return allMessages.map(
                     (message) => message.childNodes[0].textContent
@@ -366,7 +366,7 @@ class PoeClient {
         // is in the view. This scrolls to it, forcing it to be shown before initializing further operations.
         await this.page.evaluate(() => {
             let messageElements = document.querySelectorAll(
-                ".ChatMessage_chatMessage__BmN0M"
+                ".ChatMessage_chatMessage__xkgHx"
             );
             messageElements[messageElements.length - 1].scrollIntoView();
 
@@ -378,13 +378,13 @@ class PoeClient {
                     .length === 0
             ) {
                 let allThreeDotsButtons = document.querySelectorAll(
-                    ".ChatMessageOverflowButton_overflowButton__Yn0Lo"
+                    ".ChatMessageOverflowButton_overflowButton__VGVM_"
                 );
                 allThreeDotsButtons[allThreeDotsButtons.length - 1].click();
             } else {
                 messageElements[messageElements.length - 2].scrollIntoView();
                 let allThreeDotsButtons = document.querySelectorAll(
-                    ".ChatMessageOverflowButton_overflowButton__Yn0Lo"
+                    ".ChatMessageOverflowButton_overflowButton__VGVM_"
                 );
                 allThreeDotsButtons[allThreeDotsButtons.length - 2].click();
                 count += 1;
@@ -392,7 +392,7 @@ class PoeClient {
         });
 
         await this.page
-            .locator(".DropdownMenuItem_destructive__yp0hK")
+            .locator(".DropdownMenuItem_destructive__Bi9MD")
             .setEnsureElementIsInTheViewport(false)
             .setVisibility(null)
             .click();
@@ -401,7 +401,7 @@ class PoeClient {
 
         await this.page.evaluate((c) => {
             let allMessageContainers = document.querySelectorAll(
-                ".ChatMessage_messageRow__WMtnL"
+                ".ChatMessage_messageRow__DHlnq"
             );
             for (
                 let i = allMessageContainers.length - 2;
@@ -415,7 +415,7 @@ class PoeClient {
         await delay(100);
 
         await this.page
-            .locator(".ChatPageDeleteFooter_button__cWtyA")
+            .locator(".ChatPageDeleteFooter_button__6xWPc")
             .setEnsureElementIsInTheViewport(false)
             .setVisibility(null)
             .click();
@@ -427,13 +427,13 @@ class PoeClient {
         // HUGE thanks to LegendPoet for providing this fix!!!
 
         await this.page.waitForSelector(
-            "div.MessageDeleteConfirmationModal_options__RVyZn>button.Button_danger__zI3OH"
+            "div.MessageDeleteConfirmationModal_options__31rdn>button.Button_danger__Xy8Ox"
         );
 
         await this.page.evaluate(() => {
             document
                 .querySelector(
-                    "div.MessageDeleteConfirmationModal_options__RVyZn>button.Button_danger__zI3OH"
+                    "div.MessageDeleteConfirmationModal_options__31rdn>button.Button_danger__Xy8Ox"
                 )
                 .click();
         });
@@ -441,7 +441,7 @@ class PoeClient {
 
     async getBotNames() {
         await this.page.evaluate(() => {
-            [...document.querySelectorAll(".SidebarItem_label__8igXL")]
+            [...document.querySelectorAll(".SidebarItem_label__Ug6_M")]
                 .filter((_) => _.innerHTML === "Your bots")[0]
                 .click();
         });
@@ -449,7 +449,7 @@ class PoeClient {
         // Basically, scroll a bunch of times so that all bots are loaded.
         // The scroll trigger element gets populated while loading, so if it's no longer loading then that means no new bots are going to
         // be loaded
-        await this.page.waitForSelector(".InfiniteScroll_pagingTrigger__Egmr6");
+        await this.page.waitForSelector(".InfiniteScroll_pagingTrigger__cdz9I");
 
         //let stillMoreBotsToLoad = true;
 
@@ -463,7 +463,7 @@ class PoeClient {
         while (/* stillMoreBotsToLoad || */ safetyCounter < 4) {
             await this.page.evaluate(() => {
                 document
-                    .querySelector(".InfiniteScroll_pagingTrigger__Egmr6")
+                    .querySelector(".InfiniteScroll_pagingTrigger__cdz9I")
                     .scrollIntoView();
             });
 
@@ -481,7 +481,7 @@ class PoeClient {
         }
 
         let botNames = await this.page.$$eval(
-            ".BotHeader_textContainer__W6BjF",
+            ".BotHeader_textContainer__kVf_I",
             (containers) => {
                 return containers.map(
                     (container) => container.childNodes[0].innerHTML
@@ -490,9 +490,9 @@ class PoeClient {
         );
 
         await this.page.evaluate(() => {
-            document.querySelector(".Modal_closeButton__ZYPm5").click();
+            document.querySelector(".Modal_closeButton__GycnR").click();
         });
-
+        console.log(botNames);
         return Array.from(new Set(botNames));
     }
 
@@ -501,7 +501,7 @@ class PoeClient {
         // Currently, Assistant doesn't seem to work, so this is simply a failsafe.
         if (botName === "Assistant" || botName === undefined) {
             console.log(`Bot name was ${botName}`);
-            this.botName = "ChatGPT";
+            this.botName = "Assistant";
         } else {
             this.botName = botName;
         }
