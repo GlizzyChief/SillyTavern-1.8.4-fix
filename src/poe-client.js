@@ -1,8 +1,10 @@
-const DEFAULT_WINDOWS_PATH = "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
+const DEFAULT_WINDOWS_PATH =
+    "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
 const puppeteer = require("puppeteer-core");
 const { PuppeteerExtra } = require("puppeteer-extra");
 const StealthPlugin = require("puppeteer-extra-plugin-stealth");
-const { NodeHtmlMarkdown } = require("node-html-markdown");
+const Turndown = require("turndown");
+const randomUseragent = require("random-useragent");
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -15,13 +17,13 @@ puppeteerWithPlugin.use(stealthPlugin);
 class PoeClient {
     browser = null;
     page = null;
-    botName = "ChatGPT";
+    botName = "gptforst";
 
     constructor(poeCookie, botName) {
         this.poeCookie = poeCookie;
         // Currently, Assistant doesn't seem to work. This is simply a failsafe
         if (botName === "Assistant") {
-            this.botname = "ChatGPT";
+            this.botname = "gptforst";
         } else {
             this.botName = botName;
         }
@@ -34,12 +36,15 @@ class PoeClient {
     }
 
     async initializeDriver() {
+        let isMobile = false;
+
         try {
             this.browser = await puppeteer.launch({
                 executablePath:
                     "/data/data/com.termux/files/usr/bin/chromium-browser",
                 headless: "new",
             });
+            isMobile = true;
         } catch {
             try {
                 this.browser = await puppeteer.launch({
@@ -47,27 +52,43 @@ class PoeClient {
                     headless: false,
                 });
             } catch {
-                this.browser = await puppeteer.launch({
-                    executablePath: "/usr/bin/chromium",
-                    headless: false,
-                });
+                try {
+                    this.browser = await puppeteer.launch({
+                        executablePath:
+                            "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
+                        headless: false,
+                    });
+                } catch {
+                    this.browser = await puppeteer.launch({
+                        executablePath: "/usr/bin/chromium",
+                        headless: false,
+                    });
+                }
             }
         }
 
         this.page = await this.browser.newPage();
+
+        if (isMobile) {
+            await this.page.emulate(puppeteer.KnownDevices["Galaxy S9+"]);
+        }
+
+        let _ = randomUseragent.getRandom();
 
         await this.page.evaluateOnNewDocument(() => {
             Object.defineProperty(navigator, "webdriver", {
                 value: false,
                 writable: false,
             });
+
             if (navigator.platform === "Win32") {
                 Object.defineProperty(navigator, "userAgent", {
-                    value: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
+                    value: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36",
                 });
             } else {
                 Object.defineProperty(navigator, "userAgent", {
-                    value: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36",
+                    //value: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36",
+                    value: _,
                 });
             }
             Object.defineProperty(window, "chrome", {
@@ -78,21 +99,40 @@ class PoeClient {
                 value: ["en-US", "en"],
                 writable: false,
             });
+            // Object.defineProperty(navigator, "appVersion", {
+            //     value: "5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36",
+            //     writable: false,
+            // });
         });
 
         // await this.page.goto("https://bot.sannysoft.com/");
 
         // await delay(12000);
 
-        await this.page.goto("https://poe.com");
+        await this.page.goto("https://poe.com/", {
+            waitUntil: "networkidle0",
+        });
         await delay(1000);
         await this.page.setCookie({ name: "p-b", value: this.poeCookie });
         await delay(1000);
         await this.page.goto("https://poe.com");
         await delay(1000);
 
+        await this.page.goto("https://poe.com/settings", {
+            waitUntil: "networkidle0",
+        });
+
+        await this.page.evaluate(() => {
+            let label = document.querySelector(".ToggleSwitch_slider__dcLHT");
+            if (label.parentElement.childNodes[0].checked) {
+                label.click();
+            }
+        });
+
+        await delay(200);
+
         // Just in case!
-        if (this.botName === undefined) this.botName = "ChatGPT";
+        if (this.botName === undefined) this.botName = "gptforst";
 
         await this.page.goto(`https://poe.com/${this.botName}`);
 
@@ -136,7 +176,6 @@ class PoeClient {
 
         await delay(1000);
         console.log("before last message");
-        //let messages = await this.driver.findElements(By.xpath('//div[contains(@class, "Message_botMessageBubble__CPGMI")]'));
         let lastMessage = await this.page.$$eval(
             ".Message_botMessageBubble__CPGMI",
             (allMessages) => {
@@ -152,17 +191,15 @@ class PoeClient {
             return null;
         }
 
-        return NodeHtmlMarkdown.translate(lastMessage)
-            .replaceAll("\\*", "*")
-            .replaceAll("_", "*");
+        let turndown = new Turndown();
+
+        return turndown
+            .turndown(lastMessage.replaceAll("\n", "\\n"))
+            .replaceAll("\\\\n", "\n")
+            .replaceAll("\\", "");
     }
 
     async getLatestMessageStreaming() {
-        // this creates issues with jailbreak message being sent twice & the response of the second JB
-        // getting taken as the response to the RP.
-        // Until a fix is found, I suggest just throttling it slightly
-
-        //let messages = await this.driver.findElements(By.xpath('//div[contains(@class, "Message_botMessageBubble__CPGMI")]'));
         let lastMessage = await this.page.$$eval(
             ".Message_botMessageBubble__CPGMI",
             (allMessages) => {
@@ -175,22 +212,29 @@ class PoeClient {
             return "";
         }
 
-        return NodeHtmlMarkdown.translate(lastMessage)
-            .replaceAll("\\*", "*")
-            .replaceAll("_", "*");
+        let turndown = new Turndown();
+
+        return turndown
+            .turndown(lastMessage.replaceAll("\n", "\\n"))
+            .replaceAll("\\\\n", "\n")
+            .replaceAll("\\", "");
     }
 
     async sendMessage(message) {
         try {
             //searching via classname raises errors from time to time for some reason
-            //let inputForm = await this.driver.findElement(By.css("textarea"));
+
+            let title = await this.page.title();
+            console.log(`DEBUG: Current page title during SEND: ${title}`);
 
             if (this.page.$("textarea") === null) {
                 throw new Error("Input element not found! Aborting.");
             }
 
             await this.page.evaluate((message) => {
-                document.querySelector("textarea").value = message;
+                let tarea = document.querySelector("textarea");
+                tarea.value = message;
+                tarea.click();
             }, message);
 
             let inputForm = await this.page.$("textarea");
@@ -198,6 +242,12 @@ class PoeClient {
             await delay(500);
 
             await inputForm.press("Space");
+
+            console.log(
+                `After test manipulation: ${await this.page.evaluate(
+                    "document.querySelector('.ChatMessageSendButton_sendButton__OMyK1').disabled"
+                )}`
+            );
 
             await delay(5);
             await inputForm.press("Backspace");
@@ -210,8 +260,6 @@ class PoeClient {
 
             let waitingForMessage = true;
             while (waitingForMessage) {
-                //let messages = await this.driver.findElements(By.xpath('//div[contains(@class, "Message_botMessageBubble__CPGMI")]'));
-
                 if (
                     (await this.page.$(".Message_botMessageBubble__CPGMI")) ===
                     null
@@ -278,15 +326,13 @@ class PoeClient {
         // a bit of throttling fixes it
         if (!streaming) await delay(150);
 
-        //console.log("Currently in generating");
-
         if ((await this.page.$(".Message_noSignIcon__3f_KY")) !== null) {
             throw new Error("ERROR: Token window exceeded!!!!!!!!!");
         }
 
         if (
             (await this.page.$(
-                ".ChatMessageSuggestedReplies_suggestedRepliesContainer__JgW12"
+                ".ChatMessageSuggestedReplies_suggestedRepliesContainer__v6sxJ"
             )) !== null
         ) {
             return false;
@@ -300,7 +346,7 @@ class PoeClient {
         await delay(5000);
 
         let suggestedMessages = await this.page.$$eval(
-            ".ChatMessageSuggestedReplies_suggestedRepliesContainer__JgW12",
+            ".ChatMessageSuggestedReplies_suggestedRepliesContainer__v6sxJ",
             (allMessages) => {
                 return allMessages.map(
                     (message) => message.childNodes[0].textContent
@@ -316,11 +362,33 @@ class PoeClient {
     }
 
     async deleteMessages(count) {
+        // Poe decided not to show triple dot buttons for long messages, rendering it only if the message header
+        // is in the view. This scrolls to it, forcing it to be shown before initializing further operations.
         await this.page.evaluate(() => {
-            let allThreeDotsButtons = document.querySelectorAll(
-                ".ChatMessage_messageOverflowButton__8a84V"
+            let messageElements = document.querySelectorAll(
+                ".ChatMessage_chatMessage__BmN0M"
             );
-            allThreeDotsButtons[allThreeDotsButtons.length - 1].click();
+            messageElements[messageElements.length - 1].scrollIntoView();
+
+            // Poe can sometimes lose connection to its servers, creating an element unusable for purging
+            // The conversation, creating issues in purge logic. This code moves the focus to an element
+            // above the last if such an error is detected.
+            if (
+                document.querySelectorAll(".Message_errorBubble__XFYk8")
+                    .length === 0
+            ) {
+                let allThreeDotsButtons = document.querySelectorAll(
+                    ".ChatMessageOverflowButton_overflowButton__Yn0Lo"
+                );
+                allThreeDotsButtons[allThreeDotsButtons.length - 1].click();
+            } else {
+                messageElements[messageElements.length - 2].scrollIntoView();
+                let allThreeDotsButtons = document.querySelectorAll(
+                    ".ChatMessageOverflowButton_overflowButton__Yn0Lo"
+                );
+                allThreeDotsButtons[allThreeDotsButtons.length - 2].click();
+                count += 1;
+            }
         });
 
         await this.page
@@ -333,7 +401,7 @@ class PoeClient {
 
         await this.page.evaluate((c) => {
             let allMessageContainers = document.querySelectorAll(
-                ".ChatMessage_messageRow__7yIr2"
+                ".ChatMessage_messageRow__WMtnL"
             );
             for (
                 let i = allMessageContainers.length - 2;
@@ -358,28 +426,24 @@ class PoeClient {
         // Apparently, Poe updated the button classes in said modal, making the previous method to confirm the deletion not work.
         // HUGE thanks to LegendPoet for providing this fix!!!
 
-        await this.page.waitForSelector(".Button_danger__zI3OH");
-        
+        await this.page.waitForSelector(
+            "div.MessageDeleteConfirmationModal_options__RVyZn>button.Button_danger__zI3OH"
+        );
+
         await this.page.evaluate(() => {
-            document.querySelectorAll(".Button_danger__zI3OH")[1].click();
+            document
+                .querySelector(
+                    "div.MessageDeleteConfirmationModal_options__RVyZn>button.Button_danger__zI3OH"
+                )
+                .click();
         });
     }
 
     async getBotNames() {
         await this.page.evaluate(() => {
-            if (
-                document.querySelectorAll(
-                    ".PageWithSidebarNavItem_label__WUzi5"
-                )[3]?.childNodes[1]?.textContent === "All your bots"
-            ) {
-                document
-                    .querySelectorAll(".PageWithSidebarNavItem_label__WUzi5")[3]
-                    .click();
-            } else {
-                document
-                    .querySelectorAll(".PageWithSidebarNavItem_label__WUzi5")[2]
-                    .click();
-            }
+            [...document.querySelectorAll(".SidebarItem_label__8igXL")]
+                .filter((_) => _.innerHTML === "Your bots")[0]
+                .click();
         });
 
         // Basically, scroll a bunch of times so that all bots are loaded.
@@ -425,11 +489,9 @@ class PoeClient {
             }
         );
 
-        await this.page
-            .locator(".Modal_closeButton__ZYPm5")
-            .setEnsureElementIsInTheViewport(false)
-            .setVisibility(null)
-            .click();
+        await this.page.evaluate(() => {
+            document.querySelector(".Modal_closeButton__ZYPm5").click();
+        });
 
         return Array.from(new Set(botNames));
     }
