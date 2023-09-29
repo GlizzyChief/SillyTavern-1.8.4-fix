@@ -324,16 +324,16 @@ class PoeClient {
     async isGenerating(streaming = false) {
         // too fast for its own good, checks before stop button even appears, so
         // a bit of throttling fixes it
-        if (!streaming) await delay(150);
+        if (!streaming) await delay(250);
 
         if ((await this.page.$(".Message_noSignIcon__11Dy5")) !== null) {
             throw new Error("ERROR: Token window exceeded!!!!!!!!!");
         }
 
+        // Temporarly changed to detect message status by its action bar instead of suggestions
         if (
-            (await this.page.$(
-                ".ChatMessageSuggestedReplies_suggestedReply__dmJO1"
-            )) !== null
+            (await this.page.$(".ChatMessageActionBar_actionBar__gyeEs")) !==
+            null
         ) {
             return false;
         }
