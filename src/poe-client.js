@@ -122,12 +122,17 @@ class PoeClient {
             waitUntil: "networkidle0",
         });
 
-        await this.page.evaluate(() => {
-            let label = document.querySelector(".ToggleSwitch_slider__ih5sC");
-            if (label.parentElement.childNodes[0].checked) {
-                label.click();
-            }
-        });
+        try {
+            
+            await this.page.evaluate(() => {
+                let label = document.querySelector(".ToggleSwitch_slider__ih5sC");
+                if (label.parentElement.childNodes[0].checked) {
+                    label.click();
+                }
+            });
+        } catch {
+            console.log("WARNING: Couldn't disable 'Open in App' automatically, please disable it manually by going into poe.com/settings");
+        }
 
         await delay(200);
 
