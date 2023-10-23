@@ -1242,6 +1242,21 @@
                             <div id="poe_settings">
                                 <div class="range-block">
                                     <div class="range-block-title justifyLeft poe_restorable">
+                                        <span data-i18n="Jailbreak confirmation reply">Message chunk length
+                                            reply</span>
+                                        <div id="poe_token_length_restore" title="Restore default chunk length" class="right_menu_button">
+                                            <div class="fa-solid fa-clock-rotate-left"></div>
+                                        </div>
+                                    </div>
+                                    <div class="toggle-description justifyLeft" data-i18n="Bot must send this back to confirm jailbreak">
+                                        How many tokens to include in one batch
+                                    </div>
+                                    <div class="wide100p">
+                                        <input id="poe_token_length" class="text_pole textarea_compact" type="number" />
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <div class="range-block-title justifyLeft poe_restorable">
                                         <span data-i18n="Jailbreak activation message">Jailbreak activation
                                             message</span>
                                         <div id="poe_activation_message_restore" title="Restore default jailbreak" class="right_menu_button">
@@ -1641,6 +1656,17 @@
                                 </select>
                             </div>
                         </div>
+                        <div class="widthFreeExpand">
+                            <h4>Add another bot</h4>
+                            <div class="flex-container">
+                                <input id="poe_add_bot_name" class="text_pole flex1" type="text" maxlength="100" autocomplete="off" />
+                            </div>
+                        </div>
+
+                        <input id="poe_add_bot" class="menu_button" type="button" value="Add bot" />
+                        <div id="poe_add_bot_loading" class="api-load-icon fa-solid fa-hourglass fa-spin"></div>
+                        
+
                         <div class="online_status4">
                             <div class="online_status_indicator4"></div>
                             <div class="online_status_text4">No connection...</div>

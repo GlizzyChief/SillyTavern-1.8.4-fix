@@ -109,8 +109,6 @@ client.on("error", (err) => {
     console.error("An error occurred:", err);
 });
 
-//const poe = require('./src/poe-client');
-
 const PoeClient = require("./src/poe-client");
 
 let api_server = "http://0.0.0.0:5000";
@@ -2912,48 +2910,94 @@ app.post("/deletegroup", jsonParser, async (request, response) => {
 
 const POE_DEFAULT_BOT = "gptforst";
 
-const poeClientCache = {};
+// An already instantiated client. No need to keep a separate object for this
+let cachedPoeClient = null;
 
 let botNames = [];
 
-async function getPoeClient(token, useCache = false) {
+let expiredPoeTokens = [];
+
+// Instantiates and returns a Poe client with provided p_b cookie.
+// Should only receive the cookie itself, without the whole token.
+async function instantiateClient(cookie) {
     let client;
+    // Attempt to instantialize the client 3 times,
+    // to automate the handling of Poe sometimes
+    // marking the user as logged out.
+    // Most likely going to be a temporary fix,
+    // as properly closing down the sessions, or using
+    // an incognito context should be better anyway
 
-    if (useCache && poeClientCache[token]) {
-        client = poeClientCache[token];
-    } else {
-        if (poeClientCache[token]) {
-            await poeClientCache[token]?.closeDriver();
+    let successfullyInitialized = false;
+    for (let triesLeft = 3; triesLeft > 0; triesLeft--) {
+        client = new PoeClient(cookie, POE_DEFAULT_BOT);
+        successfullyInitialized = await client.initializeDriver();
+        if (!successfullyInitialized) {
+            await client?.closeDriver();
+            continue;
         }
-
-        // Attempt to instantialize the client 5 times,
-        // to automate the handling of Poe sometimes
-        // marking the user as logged out.
-        // Most likely going to be a temporary fix,
-        // as properly closing down the sessions, or using
-        // an incognito context should be better anyway
-
-        let successfulltInitialized = false;
-        for (let triesLeft = 5; triesLeft > 0; triesLeft--) {
-            client = new PoeClient(token, POE_DEFAULT_BOT);
-            successfulltInitialized = await client.initializeDriver();
-            if (!successfulltInitialized) {
-                await client.closeDriver();
-                continue;
-            }
-            break;
-        }
-        if (!successfulltInitialized) {
-            console.log(
-                "ERROR: failed to connect after 5 tries! Please double-check that your cookie is correct, or try another cookie!"
-            );
-            throw new Error(
-                "Poe failed to initialize. Please check the terminal for additional info!"
-            );
-        }
+        break;
     }
 
-    poeClientCache[token] = client;
+    if (!successfullyInitialized) {
+        console.log(
+            "ERROR: failed to connect after 5 tries! Please double-check that your cookie is correct, or try another cookie!"
+        );
+        return null;
+    }
+
+    let hasMessagesLeft = await client.checkRemainingMessages();
+    if (!hasMessagesLeft) {
+        console.log(
+            "ERROR: No more messages left on this account! Try another cookie (automatically checked if you have entered several)"
+        );
+        expiredPoeTokens.push(cookie);
+        return null;
+    }
+
+    return client;
+}
+
+// Fetches a client depending on the provided token, splitting it into parts.
+// The code is a bit clunky, will rework once I have more time though.
+async function getPoeClient(token, useCache = false) {
+    if (useCache && cachedPoeClient !== null) {
+        // Check whether the cached client has any messages left
+        // Otherwise, add its p_b to expired cookies and start the general workflow
+        // No need to close the client, as it will get closed on its own anyway
+        // right after the if block
+        if (await cachedPoeClient.checkRemainingMessages())
+            return cachedPoeClient;
+        expiredPoeTokens.push(cachedPoeClient.poeCookie);
+    }
+
+    if (cachedPoeClient !== null) {
+        await cachedPoeClient?.closeDriver();
+        cachedPoeClient = null;
+    }
+
+    let client = null;
+
+    // Parse cookies from the provided token, and try to get
+    // a client that hasn't hit the message limit yet.
+    // Throw error otherwise
+    let allCookies = token.split(/[, ]+/g);
+
+    for (let cookie of allCookies) {
+        if (expiredPoeTokens.includes(cookie)) continue;
+
+        client = await instantiateClient(cookie);
+        if (client !== null) break;
+    }
+
+    // By this point, if client is still null, then no messages are left, hence throwing an error
+    if (client === null) {
+        console.error(
+            "A client wasn't initiated with any of the provided tokens! Perhaps too many messages?"
+        );
+    }
+
+    cachedPoeClient = client;
     return client;
 }
 
@@ -2965,9 +3009,8 @@ app.post("/status_poe", jsonParser, async (request, response) => {
     }
 
     try {
-        const client = await getPoeClient(token, false);
+        const client = await getPoeClient(token, true);
         botNames = await client.getBotNames();
-        //client.disconnect_ws();
 
         return response.send({ bot_names: botNames });
     } catch (err) {
@@ -3001,12 +3044,68 @@ app.post("/purge_poe", jsonParser, async (request, response) => {
 
         if (count > 0) {
             await client.deleteMessages(count);
+        } else if (count === -1) {
+            await client.newChat();
         } else {
             await client.clearContext();
         }
         //client.disconnect_ws();
 
         return response.send({ ok: true });
+    } catch (err) {
+        console.error(err);
+        return response.sendStatus(500);
+    }
+});
+
+app.post("/add_poe_bot", jsonParser, async (request, response) => {
+    const token = readSecret(SECRET_KEYS.POE);
+
+    if (!token) {
+        return response.sendStatus(401);
+    }
+
+    const botToAdd = request.body.botToAdd;
+
+    console.log(`Trying to add bot ${botToAdd}`);
+
+    try {
+        const client = await getPoeClient(token, true);
+
+        let addBotOutput = await client.addBot(botToAdd);
+
+        if (addBotOutput.error) {
+            console.log(
+                "Couldn't add bot - check the console for more details"
+            );
+            return response.send({ ok: false });
+        }
+
+        let newBotNames = addBotOutput.newBotNames;
+        botNames = newBotNames;
+
+        return response.send({ ok: true, botNames: newBotNames });
+    } catch (err) {
+        console.error(err);
+        return response.sendStatus(500);
+    }
+});
+
+app.post("/poe_messages_left", jsonParser, async (request, response) => {
+    const token = readSecret(SECRET_KEYS.POE);
+
+    if (!token) {
+        return response.sendStatus(401);
+    }
+
+    try {
+        const client = await getPoeClient(token, true);
+
+        let hasMessagesLeft = await client.checkRemainingMessages();
+
+        console.log(`HasMessagesLeft: ${hasMessagesLeft}`);
+
+        return response.send({ hasMessagesLeft });
     } catch (err) {
         console.error(err);
         return response.sendStatus(500);
@@ -3074,7 +3173,7 @@ app.post("/generate_poe", jsonParser, async (request, response) => {
                         //"X-Message-Id": String(mes.messageId),
                     });
                 }
-                await delay(50);
+                await delay(150);
 
                 if (isGenerationStopped) {
                     console.error(
@@ -3134,8 +3233,8 @@ app.post("/generate_poe", jsonParser, async (request, response) => {
             while (waitingForMessage) {
                 await delay(400);
                 let stillGenerating = await client.isGenerating();
-                console.log(`Still generating is: ${stillGenerating}`);
-                console.log(`Waiting for message is: ${waitingForMessage}`);
+                // console.log(`Still generating is: ${stillGenerating}`);
+                // console.log(`Waiting for message is: ${waitingForMessage}`);
                 if (!stillGenerating) {
                     waitingForMessage = false;
                 }

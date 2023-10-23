@@ -3,12 +3,15 @@
 This is a patched version of SillyTavern 1.8.4 which adds support for Poe using Puppeteer.
 It can be used the same way as SillyTavern 1.8.4. Just input your p-b cookie, the path to chromium on your device and have a blast!
 
+If you want to use it with the latest version of SillyTavern, please check out [The amazing work done by LegendPoet](https://github.com/LegendPoet/SillyTavern-fix)
+
 # Instructions
 
 IMPORTANT!!!
 Before moving further, please disable "Try to open links in app" in Poe settings (poe.com/settings). Alternatively, just conect 2 times in a row. This must be done only once for each account.
 
-NOTE: Please select ChatPGT as the model. Choosing Assistant automatically switches to ChatGPT, but still please do so manually.
+If you want to use multiple cookies for bypassing 100 message limit, please write them separated by a comma in connection settings, i.e. where you'd input your cookie usually.
+
 
 ## Android
 
@@ -37,6 +40,9 @@ If you have Chrome installed anywhere othen than `C:\Windows\Program Files\Googl
 To get the path, right click on your chrome shortcut. Then, press "Open file location". Then, in the opened folder, find "chrome.exe", and, while holding shift, right click on it. In the opened menu, press "Copy path". MAKE SURE TO ADD EXTRA \ to all \ IN THE PATH!
 !! If you've installed Chrome properly, i.e. using the official installer, then just run start.bat.
 
+## OSX
+It should work by default on OSX, but please reach out if you're having issues with that!
+
 ## Other OSes
 For getting it to work any other operating system, please contact me!
 
@@ -58,9 +64,16 @@ For getting it to work any other operating system, please contact me!
 - Implemented streaming
 - Restored functionality allowing to use custom bots
 - Implemented JB-saving (message deleting)
+- Bypassed Cloudflare's non-standard browser detection
+- Implemented usage of several cookies at once
+- Test fixes for streaming formatting and omitting User dialogue in responses
+- Reduced reconnection speed to Poe API when refreshing browser tab to a few seconds (using the existing browser object)
+- Slight QoL improvements and code cleanup
+- Added ability to add a bot without leaving SillyTavern or even restarting/refreshing anything
+- Added ability to specify message batch size when sending large messages
 
 ## Contact
-Please drop me a message on [Matrix](https://matrix.to/#/@glizzychief:catgirl.cloud) or Discord (glizzychief#1048) if you have any questions or just want to say hi.
+Please drop me a message on [Matrix](https://matrix.to/#/@glizzychief:techsaviours.org) or Discord (glizzychief#1048) if you have any questions or just want to say hi.
 
-## Credits
-All credits go to the SillyTavern team and vfnm here at github, as well as the ITSNOTPOEVER project!
+## Credits and shoutouts
+All credits go to the SillyTavern team, and Shoutouts to LegendPoet and vfnm here at github, as well as the ITSNOTPOEVER project!

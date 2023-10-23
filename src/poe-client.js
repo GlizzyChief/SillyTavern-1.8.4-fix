@@ -1,5 +1,7 @@
 const DEFAULT_WINDOWS_PATH =
     "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
+const DEFAULT_OSX_PATH =
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const puppeteer = require("puppeteer-core");
 const { PuppeteerExtra } = require("puppeteer-extra");
 const StealthPlugin = require("puppeteer-extra-plugin-stealth");
@@ -21,12 +23,7 @@ class PoeClient {
 
     constructor(poeCookie, botName) {
         this.poeCookie = poeCookie;
-        // Currently, Assistant doesn't seem to work. This is simply a failsafe
-        if (botName === "Assistant") {
-            this.botname = "gptforst";
-        } else {
-            this.botName = botName;
-        }
+        this.botName = botName;
 
         console.log(`BOTNAME DURING INITIALIZING: ${this.botName}`);
     }
@@ -38,6 +35,7 @@ class PoeClient {
     async initializeDriver() {
         let isMobile = false;
 
+        // Very poor code, but it's 3 am so I can't be bothered to fix this lmao
         try {
             this.browser = await puppeteer.launch({
                 executablePath:
@@ -59,10 +57,17 @@ class PoeClient {
                         headless: false,
                     });
                 } catch {
-                    this.browser = await puppeteer.launch({
-                        executablePath: "/usr/bin/chromium",
-                        headless: false,
-                    });
+                    try {
+                        this.browser = await puppeteer.launch({
+                            executablePath: DEFAULT_OSX_PATH,
+                            headless: false,
+                        });
+                    } catch {
+                        this.browser = await puppeteer.launch({
+                            executablePath: "/usr/bin/chromium",
+                            headless: false,
+                        });
+                    }
                 }
             }
         }
@@ -109,9 +114,7 @@ class PoeClient {
 
         // await delay(12000);
 
-        await this.page.goto("https://poe.com/", {
-            waitUntil: "networkidle0",
-        });
+        await this.page.goto("https://poe.com/");
         await delay(1000);
         await this.page.setCookie({ name: "p-b", value: this.poeCookie });
         await delay(1000);
@@ -123,15 +126,18 @@ class PoeClient {
         });
 
         try {
-            
             await this.page.evaluate(() => {
-                let label = document.querySelector(".ToggleSwitch_slider__ih5sC");
+                let label = document.querySelector(
+                    ".ToggleSwitch_slider__ih5sC"
+                );
                 if (label.parentElement.childNodes[0].checked) {
                     label.click();
                 }
             });
         } catch {
-            console.log("WARNING: Couldn't disable 'Open in App' automatically, please disable it manually by going into poe.com/settings");
+            console.log(
+                "WARNING: Couldn't disable 'Open in App' automatically, please disable it manually by going into poe.com/settings"
+            );
         }
 
         await delay(200);
@@ -180,6 +186,11 @@ class PoeClient {
         // Until a fix is found, I suggest just throttling it slightly
 
         await delay(1000);
+        await this.page.evaluate(() => {
+            document
+                .querySelector(".ChatPageMain_flexGrow__UnM8q")
+                .scrollIntoView();
+        });
         console.log("before last message");
         let lastMessage = await this.page.$$eval(
             ".Message_botMessageBubble__aYctV",
@@ -208,8 +219,10 @@ class PoeClient {
         let lastMessage = await this.page.$$eval(
             ".Message_botMessageBubble__aYctV",
             (allMessages) => {
-                return allMessages[allMessages.length - 1].childNodes[0]
-                    .innerHTML;
+                let lastMessageContainer =
+                    allMessages[allMessages.length - 1].childNodes[0];
+                lastMessageContainer.scrollIntoView();
+                return lastMessageContainer.innerHTML;
             }
         );
 
@@ -219,37 +232,41 @@ class PoeClient {
 
         let turndown = new Turndown();
 
-        return turndown
-            .turndown(lastMessage.replaceAll("\n", "\\n"))
-            .replaceAll("\\\\n", "\n")
-            .replaceAll("\\", "");
+        return (
+            turndown
+                .turndown(lastMessage.replaceAll("\n", "\\n"))
+                .replaceAll("\\\\n", "\n")
+                // Just for test, may be removed later.
+                .replaceAll("*", "_")
+                .replaceAll("\\", "")
+        );
     }
 
-    async sendMessage(message) {
+    async sendMessage(message, page = this.page) {
         try {
             //searching via classname raises errors from time to time for some reason
 
-            let title = await this.page.title();
+            let title = await page.title();
             console.log(`DEBUG: Current page title during SEND: ${title}`);
 
             if (this.page.$("textarea") === null) {
                 throw new Error("Input element not found! Aborting.");
             }
 
-            await this.page.evaluate((message) => {
+            await page.evaluate((message) => {
                 let tarea = document.querySelector("textarea");
                 tarea.value = message;
                 tarea.click();
             }, message);
 
-            let inputForm = await this.page.$("textarea");
+            let inputForm = await page.$("textarea");
 
             await delay(500);
 
             await inputForm.press("Space");
 
             console.log(
-                `After test manipulation: ${await this.page.evaluate(
+                `After test manipulation: ${await page.evaluate(
                     "document.querySelector('.ChatMessageSendButton_sendButton__4ZyI4').disabled"
                 )}`
             );
@@ -266,14 +283,13 @@ class PoeClient {
             let waitingForMessage = true;
             while (waitingForMessage) {
                 if (
-                    (await this.page.$(".Message_botMessageBubble__aYctV")) ===
-                    null
+                    (await page.$(".Message_botMessageBubble__aYctV")) === null
                 ) {
                     await delay(5);
                     continue;
                 }
 
-                let lastMessage = await this.page.$$eval(
+                let lastMessage = await page.$$eval(
                     ".Message_botMessageBubble__aYctV",
                     (allMessages) => {
                         return allMessages[allMessages.length - 1].innerHTML;
@@ -326,6 +342,10 @@ class PoeClient {
         return true;
     }
 
+    async newChat() {
+        await this.page.goto(`https://poe.com/${this.botName}`);
+    }
+
     async isGenerating(streaming = false) {
         // too fast for its own good, checks before stop button even appears, so
         // a bit of throttling fixes it
@@ -376,7 +396,7 @@ class PoeClient {
             messageElements[messageElements.length - 1].scrollIntoView();
 
             // Poe can sometimes lose connection to its servers, creating an element unusable for purging
-            // The conversation, creating issues in purge logic. This code moves the focus to an element
+            // the conversation, creating issues in purge logic. This code moves the focus to an element
             // above the last if such an error is detected.
             if (
                 document.querySelectorAll(".Message_errorBubble__Bl92G")
@@ -392,7 +412,7 @@ class PoeClient {
                     ".ChatMessageOverflowButton_overflowButtonWrapper__gzb2s"
                 );
                 allThreeDotsButtons[allThreeDotsButtons.length - 2].click();
-                count += 1;
+                //count += 1;
             }
         });
 
@@ -444,8 +464,8 @@ class PoeClient {
         });
     }
 
-    async getBotNames() {
-        await this.page.evaluate(() => {
+    async getBotNames(page = this.page) {
+        await page.evaluate(() => {
             [...document.querySelectorAll(".SidebarItem_label__Ug6_M")]
                 .filter((_) => _.innerHTML === "Your bots")[0]
                 .click();
@@ -454,7 +474,7 @@ class PoeClient {
         // Basically, scroll a bunch of times so that all bots are loaded.
         // The scroll trigger element gets populated while loading, so if it's no longer loading then that means no new bots are going to
         // be loaded
-        await this.page.waitForSelector(".InfiniteScroll_pagingTrigger__cdz9I");
+        await page.waitForSelector(".InfiniteScroll_pagingTrigger__cdz9I");
 
         //let stillMoreBotsToLoad = true;
 
@@ -466,7 +486,7 @@ class PoeClient {
         // not a lot of latency is created.
 
         while (/* stillMoreBotsToLoad || */ safetyCounter < 4) {
-            await this.page.evaluate(() => {
+            await page.evaluate(() => {
                 document
                     .querySelector(".InfiniteScroll_pagingTrigger__cdz9I")
                     .scrollIntoView();
@@ -485,7 +505,7 @@ class PoeClient {
             await delay(400);
         }
 
-        let botNames = await this.page.$$eval(
+        let botNames = await page.$$eval(
             ".BotHeader_textContainer__kVf_I",
             (containers) => {
                 return containers.map(
@@ -494,25 +514,74 @@ class PoeClient {
             }
         );
 
-        await this.page.evaluate(() => {
+        await page.evaluate(() => {
             document.querySelector(".Modal_closeButton__GycnR").click();
         });
 
         return Array.from(new Set(botNames));
     }
 
-    // No error handling currently implemented for non-existing bots :/
     async changeBot(botName) {
-        // Currently, Assistant doesn't seem to work, so this is simply a failsafe.
         if (botName === undefined) {
             console.log(`Bot name was ${botName}`);
-            this.botName = "ChatGPT";
+            this.botName = "GPTforST";
         } else {
             this.botName = botName;
         }
         await this.page.goto(`https://poe.com/${this.botName}`);
+        try {
+            await this.page.evaluate(() => {
+                document.querySelector(".Modal_closeButton__GycnR").click();
+            });
+        } catch {
+            //do nothing for now lmao
+        }
 
         return true;
+    }
+
+    async checkRemainingMessages() {
+        if (
+            (await this.page.$(
+                ".ChatMessageSendButton_noFreeMessageTooltip__9IhzY"
+            )) === null
+        ) {
+            return true;
+        }
+
+        let remainingMessagesElem = await this.page.$eval(
+            ".ChatMessageSendButton_noFreeMessageTooltip__9IhzY",
+            (elem) => elem
+        );
+
+        console.log(remainingMessagesElem);
+        return false;
+    }
+
+    async addBot(botName) {
+        let newPage = await this.browser.newPage();
+        await newPage.goto(`https://poe.com/${botName}`);
+
+        if ((await this.page.$(".next-error-h1")) !== null) {
+            console.log(`Couldn't add bot ${botName}`);
+            await newPage.close();
+            return { error: true };
+        }
+
+        let successfullySentMessage = await this.sendMessage("Hey", newPage);
+        if (!successfullySentMessage) {
+            console.log(
+                `Couldn't add bot ${botName} - error during sending message`
+            );
+            await newPage.close();
+            return { error: true };
+        }
+
+        await newPage.reload();
+
+        let newBotNames = await this.getBotNames(newPage);
+        await newPage.close();
+        return { error: false, newBotNames };
     }
 }
 
