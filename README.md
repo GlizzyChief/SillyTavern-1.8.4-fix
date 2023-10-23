@@ -49,6 +49,7 @@ For getting it to work any other operating system, please contact me!
 ## Known issues
 - On Windows, sometimes it's necessary to put the browser into non-headless mode.
 - Performance depends somewhat on the device, currently averaging 6 seconds on PC and 12 seconds on android
+- On mobile, streaming and adding a bot is hit-or-miss, as some messages fail to get sent, causing all kinds of issues. Until a fix is found, I advice sticking to non-streaming on mobile, although it can still work.
 
 ## Recent fixes
 - The bot now tries to connect multiple times before throwing out the expired API token error. This is made to alleviate the issue of Poe sometimes falsely marking the user as logged out, forcing the user to press Connect again

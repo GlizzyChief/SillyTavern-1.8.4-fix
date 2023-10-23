@@ -465,6 +465,7 @@ class PoeClient {
     }
 
     async getBotNames(page = this.page) {
+        await page.waitForSelector(".SidebarItem_label__Ug6_M");
         await page.evaluate(() => {
             [...document.querySelectorAll(".SidebarItem_label__Ug6_M")]
                 .filter((_) => _.innerHTML === "Your bots")[0]
