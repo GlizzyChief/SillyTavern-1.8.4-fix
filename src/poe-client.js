@@ -7,6 +7,7 @@ const { PuppeteerExtra } = require("puppeteer-extra");
 const StealthPlugin = require("puppeteer-extra-plugin-stealth");
 const Turndown = require("turndown");
 const randomUseragent = require("random-useragent");
+const fs = require("fs");
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -314,6 +315,90 @@ class PoeClient {
         }
     }
 
+    // Basically the same as sendMessage, but with an extra file upload,
+    // and only textPrompt being typed out in the input form
+    async sendFileMessage(message, textPrompt) {
+        try {
+            let title = await this.page.title();
+            console.log(
+                `DEBUG: Current page title during SEND via file: ${title}`
+            );
+
+            if (this.page.$("textarea") === null) {
+                throw new Error("Input element not found! Aborting.");
+            }
+
+            await this.page.evaluate((message) => {
+                let tarea = document.querySelector("textarea");
+                tarea.value = message;
+                tarea.click();
+            }, textPrompt);
+
+            let inputForm = await this.page.$("textarea");
+
+            await delay(500);
+
+            await inputForm.press("Space");
+
+            console.log(
+                `After test manipulation: ${await this.page.evaluate(
+                    "document.querySelector('.ChatMessageSendButton_sendButton__4ZyI4').disabled"
+                )}`
+            );
+
+            await delay(5);
+            await inputForm.press("Backspace");
+
+            await delay(20);
+
+            fs.writeFileSync(".msg.txt", message);
+
+            let fileUploadElement = await this.page.$(
+                ".ChatMessageFileInputButton_input__svNx4"
+            );
+            await fileUploadElement.uploadFile(".msg.txt");
+
+            await delay(20);
+
+            await inputForm.press("Enter");
+
+            await delay(100);
+
+            let waitingForMessage = true;
+            while (waitingForMessage) {
+                if (
+                    (await this.page.$(".Message_botMessageBubble__aYctV")) ===
+                    null
+                ) {
+                    await delay(5);
+                    continue;
+                }
+
+                let lastMessage = await this.page.$$eval(
+                    ".Message_botMessageBubble__aYctV",
+                    (allMessages) => {
+                        return allMessages[allMessages.length - 1].innerHTML;
+                    }
+                );
+
+                if (lastMessage === "...") {
+                    await delay(5);
+                    continue;
+                }
+
+                waitingForMessage = false;
+            }
+
+            // In some cases, especially with smaller messages (e.g. jailbreak) it simply flies through without
+            // being able to register that the message is already completed
+            await delay(20);
+            return true;
+        } catch (e) {
+            console.log(e);
+            return false;
+        }
+    }
+
     async abortMessage() {
         let stillGenerating = await this.isGenerating();
         if (!stillGenerating) return false;
@@ -465,7 +550,6 @@ class PoeClient {
     }
 
     async getBotNames(page = this.page) {
-        await page.waitForSelector(".SidebarItem_label__Ug6_M");
         await page.evaluate(() => {
             [...document.querySelectorAll(".SidebarItem_label__Ug6_M")]
                 .filter((_) => _.innerHTML === "Your bots")[0]

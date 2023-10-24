@@ -692,6 +692,15 @@
                                         Show suggested replies. Not all bots support this.
                                     </div>
                                 </div>
+                                <div class="range-block">
+                                    <label for="poe_send_as_file" class="checkbox_label widthFreeExpand">
+                                        <input id="poe_send_as_file" type="checkbox" />
+                                        <span>Send as file</span>
+                                    </label>
+                                    <div class="toggle-description justifyLeft">
+                                        Send message as a text file
+                                    </div>
+                                </div>
                             </div>
                             <hr>
                         </div>
@@ -1311,6 +1320,20 @@
                                     </div>
                                     <div class="wide100p">
                                         <textarea id="poe_impersonation_prompt" class="text_pole textarea_compact" rows="6" maxlength="2500"></textarea>
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <div class="range-block-title justifyLeft poe_restorable">
+                                        <span>File instruction prompt</span>
+                                        <div id="poe_file_instruction_restore" title="Restore default instruction" class="right_menu_button">
+                                            <div class="fa-solid fa-clock-rotate-left"></div>
+                                        </div>
+                                    </div>
+                                    <div class="toggle-description justifyLeft">
+                                        This prompt gets sent with file is send as file is enabled.
+                                    </div>
+                                    <div class="wide100p">
+                                        <textarea id="poe_file_instruction" class="text_pole textarea_compact" rows="6" maxlength="2500"></textarea>
                                     </div>
                                 </div>
                             </div>

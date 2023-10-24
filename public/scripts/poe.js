@@ -48,18 +48,22 @@ const DEFAULT_CHARACTER_NUDGE_MESSAGE =
 const DEFAULT_IMPERSONATION_PROMPT =
     "[Write a reply only from the point of view of {{user}}, using the chat history so far as a guideline for the writing style of {{user}}. Don't write as {{char}} or system.]";
 
+const DEFAULT_FILE_INSTRUCTION = "Follow the instructions provided here:";
+
 const poe_settings = {
     bot: "a2",
     jailbreak_response: DEFAULT_JAILBREAK_RESPONSE,
     jailbreak_message: DEFAULT_JAILBREAK_MESSAGE,
     character_nudge_message: DEFAULT_CHARACTER_NUDGE_MESSAGE,
     impersonation_prompt: DEFAULT_IMPERSONATION_PROMPT,
+    file_instruction: DEFAULT_FILE_INSTRUCTION,
     auto_jailbreak: true,
     character_nudge: true,
     auto_purge: true,
     streaming: false,
     suggest: false,
     poe_token_length: POE_TOKEN_LENGTH,
+    send_as_file: false,
 };
 
 let auto_jailbroken = false;
@@ -85,6 +89,8 @@ function loadPoeSettings(settings) {
     $("#poe_impersonation_prompt").val(poe_settings.impersonation_prompt);
     $("#poe_suggest").prop("checked", poe_settings.suggest);
     $("#poe_token_length").val(poe_settings.poe_token_length);
+    $("#poe_send_as_file").val(poe_settings.send_as_file);
+    $("#poe_file_instruction").val(poe_settings.file_instruction);
     selectBot();
 }
 
@@ -423,6 +429,8 @@ async function sendMessage(prompt, withStreaming, withSuggestions, signal) {
         bot: poe_settings.bot,
         streaming: withStreaming && poe_settings.streaming,
         prompt,
+        send_as_file: poe_settings.send_as_file,
+        file_instruction: poe_settings.file_instruction,
     });
 
     const response = await fetch("/generate_poe", {
@@ -675,6 +683,22 @@ function onPoeTokenLengthInputRestoreClick() {
     saveSettingsDebounced();
 }
 
+function onSendAsFileInput() {
+    poe_settings.send_as_file = !!$(this).prop("checked");
+    saveSettingsDebounced();
+}
+
+function onFileInstructionInput() {
+    poe_settings.file_instruction = $(this).val();
+    saveSettingsDebounced();
+}
+
+function onFileInstructionRestoreClick() {
+    poe_settings.file_instruction = DEFAULT_FILE_INSTRUCTION;
+    $("#poe_file_instruction").val(poe_settings.file_instruction);
+    saveSettingsDebounced();
+}
+
 $("document").ready(function () {
     $("#poe_bots").on("change", onBotChange);
     $("#poe_connect").on("click", onConnectClick);
@@ -685,6 +709,7 @@ $("document").ready(function () {
     $("#poe_character_nudge").on("input", onCharacterNudgeInput);
     $("#poe_nudge_text").on("input", onCharacterNudgeMessageInput);
     $("#poe_streaming").on("input", onStreamingInput);
+    $("#poe_send_as_file").on("input", onSendAsFileInput);
     $("#poe_impersonation_prompt").on("input", onImpersonationPromptInput);
     $("#poe_impersonation_prompt_restore").on(
         "click",
@@ -703,6 +728,11 @@ $("document").ready(function () {
     $("#poe_token_length_restore").on(
         "click",
         onPoeTokenLengthInputRestoreClick
+    );
+    $("#poe_file_instruction").on("input", onFileInstructionInput);
+    $("#poe_file_instruction_restore").on(
+        "click",
+        onFileInstructionRestoreClick
     );
     $("#poe_add_bot").on("click", onBotAddClick);
     $(document).on("click", ".suggested_reply", onSuggestedReplyClick);

@@ -72,6 +72,7 @@ For getting it to work any other operating system, please contact me!
 - Slight QoL improvements and code cleanup
 - Added ability to add a bot without leaving SillyTavern or even restarting/refreshing anything
 - Added ability to specify message batch size when sending large messages
+- Added ability to send messages as a file
 
 ## Contact
 Please drop me a message on [Matrix](https://matrix.to/#/@glizzychief:techsaviours.org) or Discord (glizzychief#1048) if you have any questions or just want to say hi.

@@ -3140,6 +3140,9 @@ app.post("/generate_poe", jsonParser, async (request, response) => {
 
     const streaming = request.body.streaming ?? false;
 
+    const sendAsFile = request.body.send_as_file;
+    const fileInstruction = request.body.file_instruction;
+
     let client;
 
     try {
@@ -3158,7 +3161,12 @@ app.post("/generate_poe", jsonParser, async (request, response) => {
             ) {
                 await client.changeBot(botNames[parseInt(bot)]);
             }
-            await client.sendMessage(prompt);
+
+            if (sendAsFile) {
+                await client.sendFileMessage(prompt, fileInstruction);
+            } else {
+                await client.sendMessage(prompt);
+            }
 
             // necessary due to double jb issues
             await delay(80);
@@ -3220,7 +3228,12 @@ app.post("/generate_poe", jsonParser, async (request, response) => {
             ) {
                 await client.changeBot(botNames[parseInt(bot)]);
             }
-            await client.sendMessage(prompt);
+
+            if (sendAsFile) {
+                await client.sendFileMessage(prompt, fileInstruction);
+            } else {
+                await client.sendMessage(prompt);
+            }
 
             // necessary due to double jb issues
             await delay(500);
