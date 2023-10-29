@@ -671,6 +671,16 @@ class PoeClient {
         // await newPage.close();
         // return { error: false, newBotNames };
 
+        // Apparently, issues when adding a bot were a notorious Puppeteer bug
+        // Thought of a way to implement that without getting hit with that
+        // dollar store navigation bug
+
+        let currentPage = await this.page.evaluate(() => {
+            return window.location.href;
+        });
+
+        console.log(currentPage);
+
         await this.page.goto(`https://poe.com/${botName}`);
 
         if ((await this.page.$(".next-error-h1")) !== null) {
@@ -680,6 +690,9 @@ class PoeClient {
         }
 
         let successfullySentMessage = await this.sendMessage("Hey");
+        // temporary throttle
+        await delay(1000);
+
         if (!successfullySentMessage) {
             console.log(
                 `Couldn't add bot ${botName} - error during sending message`
@@ -688,8 +701,7 @@ class PoeClient {
             return { error: true };
         }
 
-        await this.page.goBack();
-        await this.page.reload();
+        await this.page.goto(currentPage);
 
         let newBotNames = await this.getBotNames();
         return { error: false, newBotNames };

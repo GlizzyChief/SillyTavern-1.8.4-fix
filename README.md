@@ -78,7 +78,9 @@ For getting it to work any other operating system, please contact me!
 - Fixed FlowGPT not working on mobile
 - Fixed ST thinking that bot is not jailbroken when changing bots (Thanks to LegendPoet for figuring it out!)
 - Fixed FlowGPT failing to load bots
-- Reimplemented AddBot function in Poe in hopes of getting it to work on mobile
+- Reimplemented addBot function in Poe in hopes of getting it to work on mobile
+- Fixed addBot function not working sometimes (Apparently due to a bug in Puppeteer itself: execution context gets deleted when reload is called)
+- Fixed messages not getting split into chunks properly
 
 ## Contact
 Please drop me a message on [Matrix](https://matrix.to/#/@glizzychief:techsaviours.org) or Discord (glizzychief#1048) if you have any questions or just want to say hi.

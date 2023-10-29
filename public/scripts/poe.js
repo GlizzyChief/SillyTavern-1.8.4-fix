@@ -64,6 +64,7 @@ const poe_settings = {
     suggest: false,
     poe_token_length: POE_TOKEN_LENGTH,
     send_as_file: false,
+    chunked_prompt_length: CHUNKED_PROMPT_LENGTH,
 };
 
 let auto_jailbroken = false;
@@ -77,6 +78,8 @@ const rateLimiter = new RateLimiter((60 / 10) * 1000); // 10 requests per minute
 function loadPoeSettings(settings) {
     if (settings.poe_settings) {
         Object.assign(poe_settings, settings.poe_settings);
+        poe_settings.chunked_prompt_length =
+            poe_settings.poe_token_length * 3.35;
     }
 
     $("#poe_activation_response").val(poe_settings.jailbreak_response);
@@ -324,7 +327,10 @@ async function generatePoe(type, finalPrompt, signal) {
     const suggestReplies = !isQuiet && !isImpersonate && !isContinue;
     let reply = "";
 
-    if (max_context > POE_TOKEN_LENGTH) {
+    if (max_context > poe_settings.poe_token_length) {
+        console.log(
+            `MAX CONTENT: ${max_context}, poe token length: ${poe_settings.poe_token_length}`
+        );
         console.debug("Prompt is too long, sending in chunks");
         const result = await sendChunkedMessage(
             finalPrompt,
@@ -357,7 +363,7 @@ async function sendChunkedMessage(
     const fastReplyPrompt = "\n[Reply to this message with a full stop only]";
     const promptChunks = splitRecursive(
         finalPrompt,
-        CHUNKED_PROMPT_LENGTH - fastReplyPrompt.length
+        poe_settings.chunked_prompt_length - fastReplyPrompt.length
     );
     console.debug(
         `Splitting prompt into ${promptChunks.length} chunks`,
@@ -612,6 +618,7 @@ function onMessageInput() {
 
 function onPoeTokenLengthInput() {
     poe_settings.poe_token_length = $(this).val();
+    poe_settings.chunked_prompt_length = poe_settings.poe_token_length * 3.35;
     saveSettingsDebounced();
 }
 
@@ -680,6 +687,7 @@ function onMessageRestoreClick() {
 
 function onPoeTokenLengthInputRestoreClick() {
     poe_settings.poe_token_length = POE_TOKEN_LENGTH;
+    poe_settings.chunked_prompt_length = poe_settings.poe_token_length * 3.35;
     $("#poe_token_length").val(poe_settings.poe_token_length);
     saveSettingsDebounced();
 }
