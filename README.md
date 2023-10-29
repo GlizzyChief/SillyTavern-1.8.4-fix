@@ -1,6 +1,6 @@
 # SillyTavern-1.8.4-fix
 
-This is a patched version of SillyTavern 1.8.4 which adds support for Poe using Puppeteer.
+This is a patched version of SillyTavern 1.8.4 which adds support for Poe and FlowGPT using Puppeteer.
 It can be used the same way as SillyTavern 1.8.4. Just input your p-b cookie, the path to chromium on your device and have a blast!
 
 If you want to use it with the latest version of SillyTavern, please check out [The amazing work done by LegendPoet](https://github.com/LegendPoet/SillyTavern-fix)
@@ -51,7 +51,7 @@ For getting it to work any other operating system, please contact me!
 - Performance depends somewhat on the device, currently averaging 6 seconds on PC and 12 seconds on android
 - On mobile, streaming and adding a bot is hit-or-miss, as some messages fail to get sent, causing all kinds of issues. Until a fix is found, I advice sticking to non-streaming on mobile, although it can still work.
 
-## Recent fixes
+## Recent fixes/features
 - The bot now tries to connect multiple times before throwing out the expired API token error. This is made to alleviate the issue of Poe sometimes falsely marking the user as logged out, forcing the user to press Connect again
 - Fixed issues with characters responding with '{'reply': 'some text'}'
 - Fixed characters responding with unfinished messages or triple dots
@@ -73,9 +73,12 @@ For getting it to work any other operating system, please contact me!
 - Added ability to add a bot without leaving SillyTavern or even restarting/refreshing anything
 - Added ability to specify message batch size when sending large messages
 - Added ability to send messages as a file
+- Fixed messages not getting split in batches properly (thanks a lot to manwith33 for pointing it out on Issues)
+- Added FlowGPT support
 
 ## Contact
 Please drop me a message on [Matrix](https://matrix.to/#/@glizzychief:techsaviours.org) or Discord (glizzychief#1048) if you have any questions or just want to say hi.
 
 ## Credits and shoutouts
 All credits go to the SillyTavern team, and Shoutouts to LegendPoet and vfnm here at github, as well as the ITSNOTPOEVER project!
+Additional shoutouts to LegendPoet and Hakon for all the support they've given so far!

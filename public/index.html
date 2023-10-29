@@ -74,6 +74,7 @@
     <script type="module" src="scripts/bookmarks.js"></script>
     <script type="module" src="scripts/horde.js"></script>
     <script type="module" src="scripts/poe.js"></script>
+    <script type="module" src="scripts/flowgpt.js"></script>
     <script type="module" src="scripts/RossAscends-mods.js"></script>
     <script type="module" src="scripts/slash-commands.js"></script>
     <script type="module" src="scripts/tags.js"></script>
@@ -162,6 +163,10 @@
                             <div id="poe_api-presets">
                                 <h3><span data-i18n="poe.com api settings">Poe.com API Settings</span></h3>
                                 <!-- just a placeholder title for the Poe.com settings panel-->
+                            </div>
+                            <div id="flowgpt_api-presets">
+                                <h3><span>FlowGPT API Settings</span></h3>
+                                <!-- just a placeholder title for the FlowGPT settings panel-->
                             </div>
                             <hr>
                         </div>
@@ -699,6 +704,49 @@
                                     </label>
                                     <div class="toggle-description justifyLeft">
                                         Send message as a text file
+                                    </div>
+                                </div>
+                            </div>
+                           <div id="range_block_flowgpt">
+                                <div>
+                                    Use "Unlocked Context" to enable chunked generation.
+                                    It extends the context window in exchange for reply generation speed.
+                                </div>
+                                <h4>Safe Context Size values for most FlowGPT bots is around 4000 tokens or so</h4>
+                                <div class="flex-container spaceEvenly">
+                                    <div id="flowgpt_send_jailbreak" class="menu_button widthFitContent" title="Attempts to automatically jailbreak the bot">
+                                        Send Jailbreak
+                                    </div>
+                                    <div id="flowgpt_purge_chat" class="menu_button widthFitContent" title="Creates a new purged chat on FlowGPT">
+                                        Purge FlowGPT Chat
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <label for="flowgpt_auto_purge" class="checkbox_label widthFreeExpand">
+                                        <input id="flowgpt_auto_purge" type="checkbox"><span>
+                                            Auto-purge API context (save JB, advice to keep it enabled)</span>
+                                    </label>
+                                    <div class="toggle-description justifyLeft">
+                                        Keeps the Jailbroken state in the context. This way, new messages are sent by editing
+                                        the last sent message, preventing JB to be pushed out of context.
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <label for="flowgpt_auto_jailbreak" class="checkbox_label widthFreeExpand">
+                                        <input id="flowgpt_auto_jailbreak" type="checkbox"><span data-i18n="Auto-jailbreak">
+                                            Auto-jailbreak</span>
+                                    </label>
+                                    <div class="toggle-description justifyLeft">
+                                        Send the jailbreak message before first generation after page refresh. (better keep on)
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <label for="flowgpt_character_nudge" class="checkbox_label widthFreeExpand">
+                                        <input id="flowgpt_character_nudge" type="checkbox" /><span data-i18n="Send character note">
+                                            Send character note</span>
+                                    </label>
+                                    <div class="toggle-description justifyLeft" data-i18n="Sent with every prompt to modify bot responses.">
+                                        Sent with every prompt to modify bot responses.
                                     </div>
                                 </div>
                             </div>
@@ -1337,6 +1385,67 @@
                                     </div>
                                 </div>
                             </div>
+
+                            <div id="flowgpt_settings">
+                                <div class="range-block">
+                                    <div class="range-block-title justifyLeft flowgpt_restorable">
+                                        <span data-i18n="Jailbreak activation message">Jailbreak activation
+                                            message</span>
+                                        <div id="flowgpt_activation_message_restore" title="Restore default jailbreak" class="right_menu_button">
+                                            <div class="fa-solid fa-clock-rotate-left"></div>
+                                        </div>
+                                    </div>
+                                    <div class="toggle-description justifyLeft" data-i18n="Message to send when auto-jailbreak is on.">
+                                        Message to send when auto-jailbreak is on.
+                                    </div>
+                                    <div class="wide100p">
+                                        <textarea id="flowgpt_activation_message" class="text_pole textarea_compact" rows="6"></textarea>
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <div class="range-block-title justifyLeft flowgpt_restorable">
+                                        <span data-i18n="Jailbreak confirmation reply">Jailbreak confirmation
+                                            reply</span>
+                                        <div id="flowgpt_activation_response_restore" title="Restore default reply" class="right_menu_button">
+                                            <div class="fa-solid fa-clock-rotate-left"></div>
+                                        </div>
+                                    </div>
+                                    <div class="toggle-description justifyLeft" data-i18n="Bot must send this back to confirm jailbreak">
+                                        Bot must send this back to confirm jailbreak
+                                    </div>
+                                    <div class="wide100p">
+                                        <input id="flowgpt_activation_response" class="text_pole textarea_compact" type="text" />
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <div class="range-block-title justifyLeft flowgpt_restorable">
+                                        <span data-i18n="Character Note">Character Note</span>
+                                        <div id="flowgpt_nudge_text_restore" title="Restore default note" class="right_menu_button">
+                                            <div class="fa-solid fa-clock-rotate-left"></div>
+                                        </div>
+                                    </div>
+                                    <div class="toggle-description justifyLeft" data-i18n="Influences bot behavior in its responses">
+                                        Influences bot behavior in its responses.
+                                    </div>
+                                    <div class="wide100p">
+                                        <textarea id="flowgpt_nudge_text" class="text_pole textarea_compact" rows="6" maxlength="2500"></textarea>
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <div class="range-block-title justifyLeft flowgpt_restorable">
+                                        <span data-i18n="Impersonation prompt">Impersonation prompt</span>
+                                        <div id="flowgpt_impersonation_prompt_restore" title="Restore default prompt" class="right_menu_button">
+                                            <div class="fa-solid fa-clock-rotate-left"></div>
+                                        </div>
+                                    </div>
+                                    <div class="toggle-description justifyLeft" data-i18n="Prompt that is used for Impersonation function">
+                                        Prompt that is used for Impersonation function
+                                    </div>
+                                    <div class="wide100p">
+                                        <textarea id="flowgpt_impersonation_prompt" class="text_pole textarea_compact" rows="6" maxlength="2500"></textarea>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1358,6 +1467,7 @@
                             <option value="novel">NovelAI</option>
                             <option value="openai">Chat Completion (OpenAI, Claude, Window/OpenRouter)</option>
                             <option value="poe">Poe</option>
+                            <option value="flowgpt">FlowGPT</option>
                         </select>
                     </div>
                     <div id="kobold_horde" style="position: relative;"> <!-- shows the kobold settings -->
@@ -1689,6 +1799,48 @@
                         <input id="poe_add_bot" class="menu_button" type="button" value="Add bot" />
                         <div id="poe_add_bot_loading" class="api-load-icon fa-solid fa-hourglass fa-spin"></div>
                         
+
+                        <div class="online_status4">
+                            <div class="online_status_indicator4"></div>
+                            <div class="online_status_text4">No connection...</div>
+                        </div>
+                    </div>
+                    <div id="flowgpt_api">
+                        <h4>
+                            FlowGPT (WIP)
+                        </h4>
+                        <span>
+                            <ol>
+                                <li>
+                                    The instructions are the same as for Poe, but this time, look for a cookie named '__Secure-next-auth.session-token'
+                                </li>
+                                <li>Enter it in the box below:</li>
+                            </ol>
+                        </span>
+                        <div class="widthFreeExpand">
+                            <div class="flex-container">
+                                <input id="flowgpt_token" class="text_pole flex1" type="text" maxlength="1000" autocomplete="off" />
+                                <div title="Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_flowgpt">
+                                </div>
+                            </div>
+                            <div data-for="flowgpt_token" class="neutral_warning">
+                                For privacy reasons, your API key will be hidden after you reload the page.
+                            </div>
+                        </div>
+
+                        <input id="flowgpt_connect" class="menu_button" type="button" value="Connect" />
+                        <div id="api_loading_flowgpt" class="api-load-icon fa-solid fa-hourglass fa-spin"></div>
+
+                        <div class="range-block">
+                            <div class="range-block-title">
+                                <h4 data-i18n="Bot">Bot</h4>
+                            </div>
+                            <div class="widthFreeExpand">
+                                <select id="flowgpt_bots">
+                                    <option data-i18n="Connect to the API">-- Connect to the API --</option>
+                                </select>
+                            </div>
+                        </div>
 
                         <div class="online_status4">
                             <div class="online_status_indicator4"></div>
@@ -2864,7 +3016,7 @@
 
         <div class="inline-drawer">
             <div class="inline-drawer-toggle inline-drawer-header">
-                <h4>Prompt Overrides <small>(For OpenAI/Claude APIs, Window/OpenRouter, Poe, and Instruct mode)</small></h4>
+                <h4>Prompt Overrides <small>(For OpenAI/Claude APIs, Window/OpenRouter, Poe, FlowGPT and Instruct mode)</small></h4>
 
 
                 <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
@@ -2877,7 +3029,7 @@
                 </div>
                 <div>
                     <h4>Jailbreak</h4>
-                    <textarea id="post_history_instructions_textarea" name="post_history_instructions" placeholder="Any contents here will replace the default Jailbreak Prompt (Character Note for Poe) used for this character.&#10;(v2 spec: post_history_instructions)" form="form_create" class="text_pole" autocomplete="off" rows="3" maxlength="20000"></textarea>
+                    <textarea id="post_history_instructions_textarea" name="post_history_instructions" placeholder="Any contents here will replace the default Jailbreak Prompt (Character Note for Poe & FlowGPT) used for this character.&#10;(v2 spec: post_history_instructions)" form="form_create" class="text_pole" autocomplete="off" rows="3" maxlength="20000"></textarea>
                 </div>
             </div>
         </div>

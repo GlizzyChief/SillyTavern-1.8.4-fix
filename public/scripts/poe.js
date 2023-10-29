@@ -323,7 +323,7 @@ async function generatePoe(type, finalPrompt, signal) {
     const suggestReplies = !isQuiet && !isImpersonate && !isContinue;
     let reply = "";
 
-    if (max_context > POE_TOKEN_LENGTH && poe_settings.bot !== "a2_100k") {
+    if (max_context > POE_TOKEN_LENGTH) {
         console.debug("Prompt is too long, sending in chunks");
         const result = await sendChunkedMessage(
             finalPrompt,

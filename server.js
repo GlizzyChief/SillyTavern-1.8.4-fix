@@ -110,6 +110,7 @@ client.on("error", (err) => {
 });
 
 const PoeClient = require("./src/poe-client");
+const FlowGPTClient = require("./src/flowgpt-client");
 
 let api_server = "http://0.0.0.0:5000";
 let api_novelai = "https://api.novelai.net";
@@ -2917,6 +2918,12 @@ let botNames = [];
 
 let expiredPoeTokens = [];
 
+const FLOWGPT_DEFAULT_BOT = "ChatGPT";
+
+let cachedFlowGPTClient = null;
+
+let flowGPTBotNames = [];
+
 // Instantiates and returns a Poe client with provided p_b cookie.
 // Should only receive the cookie itself, without the whole token.
 async function instantiateClient(cookie) {
@@ -2961,6 +2968,11 @@ async function instantiateClient(cookie) {
 // Fetches a client depending on the provided token, splitting it into parts.
 // The code is a bit clunky, will rework once I have more time though.
 async function getPoeClient(token, useCache = false) {
+    // Since both use a headless browser, close the other one before using this
+    if (cachedFlowGPTClient !== null) {
+        await cachedFlowGPTClient.closeDriver();
+        cachedFlowGPTClient = null;
+    }
     if (useCache && cachedPoeClient !== null) {
         // Check whether the cached client has any messages left
         // Otherwise, add its p_b to expired cookies and start the general workflow
@@ -3369,6 +3381,160 @@ app.post("/poe_suggest", jsonParser, async function (request, response) {
         } else {
             return response.end();
         }
+    }
+});
+
+async function getFlowGPTClient(token, useCache = false) {
+    // Since both use a headless browser, close the other one before using this
+    if (cachedPoeClient !== null) {
+        await cachedPoeClient.closeDriver();
+        cachedPoeClient = null;
+    }
+    if (useCache && cachedFlowGPTClient !== null) {
+        return cachedFlowGPTClient;
+    }
+
+    if (cachedFlowGPTClient !== null) {
+        await cachedFlowGPTClient?.closeDriver();
+        cachedFlowGPTClient = null;
+    }
+
+    let client = null;
+
+    client = new FlowGPTClient(token, FLOWGPT_DEFAULT_BOT);
+    successfullyInitialized = await client.initializeDriver();
+    if (!successfullyInitialized) {
+        await client?.closeDriver();
+        client = null;
+    }
+
+    // By this point, if client is still null, then no messages are left, hence throwing an error
+    if (client === null) {
+        console.error("Error during initializing FlowGPT :(");
+    }
+
+    cachedFlowGPTClient = client;
+    return client;
+}
+
+app.post("/status_flowgpt", jsonParser, async (request, response) => {
+    const token = readSecret(SECRET_KEYS.FLOWGPT);
+
+    if (!token) {
+        return response.sendStatus(401);
+    }
+
+    try {
+        const client = await getFlowGPTClient(token, true);
+        flowGPTBotNames = await client.getBotNames();
+        console.log(flowGPTBotNames);
+
+        return response.send({ bot_names: flowGPTBotNames });
+    } catch (err) {
+        console.error(err);
+
+        return response.sendStatus(401);
+    }
+});
+
+app.post("/purge_flowgpt", jsonParser, async (request, response) => {
+    const token = readSecret(SECRET_KEYS.FLOWGPT);
+
+    if (!token) {
+        return response.sendStatus(401);
+    }
+
+    const bot = request.body.bot ?? FLOWGPT_DEFAULT_BOT;
+
+    console.log(`!Purging FlowGPT chat!`);
+
+    try {
+        const client = await getFlowGPTClient(token, true);
+
+        if (
+            flowGPTBotNames[parseInt(bot)] !== client.botName &&
+            flowGPTBotNames[parseInt(bot)] !== undefined
+        ) {
+            await client.changeBot(flowGPTBotNames[parseInt(bot)]);
+        }
+
+        await client.newChat();
+
+        return response.send({ ok: true });
+    } catch (err) {
+        console.error(err);
+        return response.sendStatus(500);
+    }
+});
+
+app.post("/generate_flowgpt", jsonParser, async (request, response) => {
+    if (!request.body.prompt) {
+        return response.sendStatus(400);
+    }
+
+    const token = readSecret(SECRET_KEYS.FLOWGPT);
+
+    if (!token) {
+        return response.sendStatus(401);
+    }
+
+    const abortController = new AbortController();
+
+    request.socket.removeAllListeners("close");
+    request.socket.on("close", function () {
+        isGenerationStopped = true;
+
+        if (client) {
+            abortController.abort();
+        }
+    });
+
+    const prompt = request.body.prompt;
+    const bot = request.body.bot ?? FLOWGPT_DEFAULT_BOT;
+
+    const editLastMessage = request.body.editLastMessage;
+
+    let client;
+
+    try {
+        client = await getFlowGPTClient(token, true);
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+
+    try {
+        let reply;
+
+        if (
+            flowGPTBotNames[parseInt(bot)] !== client.botName &&
+            flowGPTBotNames[parseInt(bot)] !== undefined
+        ) {
+            await client.changeBot(flowGPTBotNames[parseInt(bot)]);
+        }
+
+        if (editLastMessage) {
+            await client.editLastSentMessage(prompt);
+        } else {
+            await client.sendMessage(prompt);
+        }
+
+        // necessary due to double jb issues
+        await delay(500);
+
+        console.log("Getting latest message...");
+
+        reply = await client.getLatestMessage();
+
+        console.log(reply);
+
+        await delay(200);
+
+        // Temporary fix due to issues during parsing json on client side
+        return response.send(reply);
+    } catch {
+        //client.disconnect_ws();
+        return response.sendStatus(500);
     }
 });
 
@@ -4290,6 +4456,7 @@ const SECRET_KEYS = {
     OPENAI: "api_key_openai",
     POE: "api_key_poe",
     NOVEL: "api_key_novel",
+    FLOWGPT: "api_key_flowgpt",
     CLAUDE: "api_key_claude",
     DEEPL: "deepl",
     OPENROUTER: "api_key_openrouter",
@@ -4308,6 +4475,7 @@ function migrateSecrets() {
         const oaiKey = settings?.api_key_openai;
         const hordeKey = settings?.horde_settings?.api_key;
         const poeKey = settings?.poe_settings?.token;
+        const flowgptKey = settings?.flowgpt_settings?.token;
         const novelKey = settings?.api_key_novel;
 
         if (typeof oaiKey === "string") {
@@ -4328,6 +4496,13 @@ function migrateSecrets() {
             console.log("Migrating Poe key...");
             writeSecret(SECRET_KEYS.POE, poeKey);
             delete settings.poe_settings.token;
+            modified = true;
+        }
+
+        if (typeof flowgptKey === "string") {
+            console.log("Migrating FlowGPT key...");
+            writeSecret(SECRET_KEYS.FLOWGPT, flowgptKey);
+            delete settings.flowgpt_settings.token;
             modified = true;
         }
 
