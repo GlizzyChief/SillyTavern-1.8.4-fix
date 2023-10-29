@@ -76,9 +76,11 @@ class FlowGPTClient {
 
         this.page = await this.browser.newPage();
 
-        if (isMobile) {
-            await this.page.emulate(puppeteer.KnownDevices["Galaxy S9+"]);
-        }
+        // Mobile layout causes issues, and since FlowGPT doesn't
+        // really have any protection, there is no need to emulate a device
+        // if (isMobile) {
+        //     await this.page.emulate(puppeteer.KnownDevices["Galaxy S9+"]);
+        // }
 
         let _ = randomUseragent.getRandom();
 
@@ -125,7 +127,7 @@ class FlowGPTClient {
         console.log("Waiting for page load...");
         await this.page.goto("https://flowgpt.com/chat", {
             timeout: 0,
-            waitUntil: "load",
+            waitUntil: "domcontentloaded",
         });
         console.log("Waiting for bot names to be loaded...");
 

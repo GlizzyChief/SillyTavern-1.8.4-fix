@@ -75,6 +75,10 @@ For getting it to work any other operating system, please contact me!
 - Added ability to send messages as a file
 - Fixed messages not getting split in batches properly (thanks a lot to manwith33 for pointing it out on Issues)
 - Added FlowGPT support
+- Fixed FlowGPT not working on mobile
+- Fixed ST thinking that bot is not jailbroken when changing bots (Thanks to LegendPoet for figuring it out!)
+- Fixed FlowGPT failing to load bots
+- Reimplemented AddBot function in Poe in hopes of getting it to work on mobile
 
 ## Contact
 Please drop me a message on [Matrix](https://matrix.to/#/@glizzychief:techsaviours.org) or Discord (glizzychief#1048) if you have any questions or just want to say hi.

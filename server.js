@@ -3506,11 +3506,8 @@ app.post("/generate_flowgpt", jsonParser, async (request, response) => {
     try {
         let reply;
 
-        if (
-            flowGPTBotNames[parseInt(bot)] !== client.botName &&
-            flowGPTBotNames[parseInt(bot)] !== undefined
-        ) {
-            await client.changeBot(flowGPTBotNames[parseInt(bot)]);
+        if (bot !== client.botName && flowGPTBotNames.includes(bot)) {
+            await client.changeBot(bot);
         }
 
         if (editLastMessage) {

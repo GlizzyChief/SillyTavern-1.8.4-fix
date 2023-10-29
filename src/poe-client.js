@@ -644,28 +644,54 @@ class PoeClient {
     }
 
     async addBot(botName) {
-        let newPage = await this.browser.newPage();
-        await newPage.goto(`https://poe.com/${botName}`);
+        // Old implementation, seems to not work in headless mode.
+        // Rewritten not to use a second tab instead
+
+        // let newPage = await this.browser.newPage();
+        // await newPage.goto(`https://poe.com/${botName}`);
+
+        // if ((await newPage.$(".next-error-h1")) !== null) {
+        //     console.log(`Couldn't add bot ${botName}`);
+        //     await newPage.close();
+        //     return { error: true };
+        // }
+
+        // let successfullySentMessage = await this.sendMessage("Hey", newPage);
+        // if (!successfullySentMessage) {
+        //     console.log(
+        //         `Couldn't add bot ${botName} - error during sending message`
+        //     );
+        //     await newPage.close();
+        //     return { error: true };
+        // }
+
+        // await newPage.reload();
+
+        // let newBotNames = await this.getBotNames(newPage);
+        // await newPage.close();
+        // return { error: false, newBotNames };
+
+        await this.page.goto(`https://poe.com/${botName}`);
 
         if ((await this.page.$(".next-error-h1")) !== null) {
-            console.log(`Couldn't add bot ${botName}`);
-            await newPage.close();
+            console.log(`Couldn't add bot ${botName} - bot not found!`);
+            await this.page.goBack();
             return { error: true };
         }
 
-        let successfullySentMessage = await this.sendMessage("Hey", newPage);
+        let successfullySentMessage = await this.sendMessage("Hey");
         if (!successfullySentMessage) {
             console.log(
                 `Couldn't add bot ${botName} - error during sending message`
             );
-            await newPage.close();
+            await this.page.goBack();
             return { error: true };
         }
 
-        await newPage.reload();
+        await this.page.goBack();
+        await this.page.reload();
 
-        let newBotNames = await this.getBotNames(newPage);
-        await newPage.close();
+        let newBotNames = await this.getBotNames();
         return { error: false, newBotNames };
     }
 }

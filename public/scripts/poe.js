@@ -51,7 +51,7 @@ const DEFAULT_IMPERSONATION_PROMPT =
 const DEFAULT_FILE_INSTRUCTION = "Follow the instructions provided here:";
 
 const poe_settings = {
-    bot: "a2",
+    bot: "GPTforST",
     jailbreak_response: DEFAULT_JAILBREAK_RESPONSE,
     jailbreak_message: DEFAULT_JAILBREAK_MESSAGE,
     character_nudge_message: DEFAULT_CHARACTER_NUDGE_MESSAGE,
@@ -196,6 +196,7 @@ async function suggestReplies(messageId) {
 
 function onBotChange() {
     poe_settings.bot = $("#poe_bots").find(":selected").val();
+    auto_jailbroken = false;
     saveSettingsDebounced();
 }
 
