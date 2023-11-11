@@ -82,6 +82,9 @@ For getting it to work any other operating system, please contact me!
 - Reimplemented addBot function in Poe in hopes of getting it to work on mobile
 - Fixed addBot function not working sometimes (Apparently due to a bug in Puppeteer itself: execution context gets deleted when reload is called)
 - Fixed messages not getting split into chunks properly
+- Increased Poe token length limit to accomodate for using multiple tokens at once
+- Fixed the fix not working if system language is set to anything other than English. Apparently, Poe now ignores browser's navigator.languages setting, instead opting out for system languages set in the browser itself. To avoid messing with users' browsers, made it so language change happens in Poe itself.
+- Refactored poe-client.js slightly to allow for quicker fixing if classnames change in the future
 
 ## Contact
 Please drop me a message on [Matrix](https://matrix.to/#/@glizzychief:techsaviours.org) or Discord (glizzychief#1048) if you have any questions or just want to say hi.

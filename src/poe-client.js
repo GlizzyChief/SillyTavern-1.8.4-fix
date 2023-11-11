@@ -17,6 +17,36 @@ let stealthPlugin = StealthPlugin();
 
 puppeteerWithPlugin.use(stealthPlugin);
 
+// CSS classes for quick fixing
+const OPEN_IN_APP_TOGGLER_CLASS = ".ToggleSwitch_slider__ih5sC";
+const LANGUAGE_SELECT_CLASS = ".Select_select__9vzGo";
+const MODAL_CLOSE_CLASS = ".Modal_closeButton__ZYPm5";
+const LOGGED_OUT_MODAL_CLASS = ".LoggedOutBotInfoPage_appButton__DZ5ol";
+const CHAT_GROW_CLASS = ".ChatPageMain_flexGrow__UnM8q"; // Element that loads the rest of the chat when scrolling down
+const MESSAGE_BUBBLE_CLASS = ".Message_botMessageBubble__aYctV";
+const STOP_BUTTON_CLASS = ".ChatStopMessageButton_stopButton__QOW41";
+const FILE_ATTACH_CLASS = ".ChatMessageFileInputButton_input__svNx4";
+const PURGE_CHAT_CLASS = ".ChatBreakButton_button__zyEye";
+const TOKEN_EXCEEDED_MESSAGE_CLASS = ".Message_noSignIcon__11Dy5";
+const MESSAGE_ACTION_BAR_CLASS = ".ChatMessageActionBar_actionBar__gyeEs";
+const SUGGESTED_REPLY_CLASS =
+    ".ChatMessageSuggestedReplies_suggestedReply__dmJO1";
+const MESSAGE_CONTAINER_CLASS = ".ChatMessage_chatMessage__xkgHx"; // Used when deleting
+const ERROR_MESSAGE_CLASS = ".Message_errorBubble__Bl92G";
+const THREE_DOT_MENU_CLASS =
+    ".ChatMessageOverflowButton_overflowButtonWrapper__gzb2s";
+const DROPDOWN_DELETE_BUTTON_CLASS = ".DropdownMenuItem_destructive__Bi9MD"; // the "Delete" button that appears in message options
+const FULL_MESSAGE_CONTAINER_CLASS = ".ChatMessage_messageRow__DHlnq"; // contains the whole message, used when deleting
+const DELETE_BUTTON_CLASS = ".ChatPageDeleteFooter_button__6xWPc"; // the "Delete" button on the bottom of the screen
+const DELETE_CONFIRM_BUTTON_SELECTOR =
+    "div.MessageDeleteConfirmationModal_options__31rdn>button.Button_danger__Xy8Ox";
+const SIDEBAR_ITEM_CLASS = ".SidebarItem_label__Ug6_M"; // Used for triggering bot list
+const INFINITE_SCROLL_CLASS = ".InfiniteScroll_pagingTrigger__cdz9I"; // invisible element at the end of the bot list, loads more when in view
+const BOT_NAME_CONTAINER_CLASS = ".BotHeader_textContainer__kVf_I";
+const GENERIC_MODAL_CLOSE_CLASS = ".Modal_closeButton__GycnR"; // Used when closing modals that popup when changing bot, or fetching bot list
+const OUT_OUF_MESSAGES_CLASS =
+    ".ChatMessageSendButton_noFreeMessageTooltip__9IhzY";
+
 class PoeClient {
     browser = null;
     page = null;
@@ -101,10 +131,10 @@ class PoeClient {
                 value: true,
                 writable: false,
             });
-            Object.defineProperty(navigator, "languages", {
-                value: ["en-US", "en"],
-                writable: false,
-            });
+            // Object.defineProperty(navigator, "languages", {
+            //     value: ["en-US", "en"],
+            //     writable: false,
+            // });
             // Object.defineProperty(navigator, "appVersion", {
             //     value: "5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36",
             //     writable: false,
@@ -127,18 +157,33 @@ class PoeClient {
         });
 
         try {
-            await this.page.evaluate(() => {
-                let label = document.querySelector(
-                    ".ToggleSwitch_slider__ih5sC"
-                );
+            await this.page.evaluate((classname) => {
+                let label = document.querySelector(classname);
                 if (label.parentElement.childNodes[0].checked) {
                     label.click();
                 }
-            });
+            }, OPEN_IN_APP_TOGGLER_CLASS);
         } catch {
             console.log(
                 "WARNING: Couldn't disable 'Open in App' automatically, please disable it manually by going into poe.com/settings"
             );
+        }
+
+        // Attempting to force language to be english while still at /settings
+        try {
+            // As far as I know, page.select() doesn't allow anything other than a string, so no choice but to
+            // manually assign an id to the needed select element.
+            await this.page.evaluate((classname) => {
+                document.querySelectorAll(classname)[1].id = "lang";
+            }, LANGUAGE_SELECT_CLASS);
+
+            await this.page.select("select#lang", "en");
+            await delay(300);
+        } catch (e) {
+            console.log(
+                "WARNING: Couldn't change language! Please send the next line to the developer via discord. Integration may fail to work!"
+            );
+            console.log(JSON.stringify(e));
         }
 
         await delay(200);
@@ -153,9 +198,9 @@ class PoeClient {
         // Looks like Poe just loves random popups. Why man, why...
         let allPopupsClosed = false;
         while (!allPopupsClosed) {
-            if ((await this.page.$(".Modal_closeButton__ZYPm5")) !== null) {
+            if ((await this.page.$(MODAL_CLOSE_CLASS)) !== null) {
                 let modalCloseButton = await this.page.waitForSelector(
-                    ".Modal_closeButton__ZYPm5"
+                    MODAL_CLOSE_CLASS
                 );
                 await modalCloseButton.click();
                 console.log("A popup was blocked!!");
@@ -165,10 +210,7 @@ class PoeClient {
             }
         }
 
-        if (
-            (await this.page.$(".LoggedOutBotInfoPage_appButton__DZ5ol")) !==
-            null
-        ) {
+        if ((await this.page.$(LOGGED_OUT_MODAL_CLASS)) !== null) {
             console.log(
                 "Poe.com did not authenticate with the provided cookie - Logged out wrapper was present on the page!"
             );
@@ -186,15 +228,14 @@ class PoeClient {
         // getting taken as the response to the RP.
         // Until a fix is found, I suggest just throttling it slightly
 
-        await delay(1000);
-        await this.page.evaluate(() => {
-            document
-                .querySelector(".ChatPageMain_flexGrow__UnM8q")
-                .scrollIntoView();
-        });
+        await delay(700);
+        await this.page.evaluate((classname) => {
+            document.querySelector(classname).scrollIntoView();
+        }, CHAT_GROW_CLASS);
+        await delay(300);
         console.log("before last message");
         let lastMessage = await this.page.$$eval(
-            ".Message_botMessageBubble__aYctV",
+            MESSAGE_BUBBLE_CLASS,
             (allMessages) => {
                 return allMessages[allMessages.length - 1].childNodes[0]
                     .innerHTML;
@@ -218,7 +259,7 @@ class PoeClient {
 
     async getLatestMessageStreaming() {
         let lastMessage = await this.page.$$eval(
-            ".Message_botMessageBubble__aYctV",
+            MESSAGE_BUBBLE_CLASS,
             (allMessages) => {
                 let lastMessageContainer =
                     allMessages[allMessages.length - 1].childNodes[0];
@@ -266,9 +307,11 @@ class PoeClient {
 
             await inputForm.press("Space");
 
+            // Since this is used only for info logging and is easy to get,
+            // decided not to add it for now.
             console.log(
                 `After test manipulation: ${await page.evaluate(
-                    "document.querySelector('.ChatMessageSendButton_sendButton__4ZyI4').disabled"
+                    `document.querySelector(".ChatMessageSendButton_sendButton__4ZyI4").disabled`
                 )}`
             );
 
@@ -283,15 +326,13 @@ class PoeClient {
 
             let waitingForMessage = true;
             while (waitingForMessage) {
-                if (
-                    (await page.$(".Message_botMessageBubble__aYctV")) === null
-                ) {
+                if ((await page.$(MESSAGE_BUBBLE_CLASS)) === null) {
                     await delay(5);
                     continue;
                 }
 
                 let lastMessage = await page.$$eval(
-                    ".Message_botMessageBubble__aYctV",
+                    MESSAGE_BUBBLE_CLASS,
                     (allMessages) => {
                         return allMessages[allMessages.length - 1].innerHTML;
                     }
@@ -353,9 +394,7 @@ class PoeClient {
 
             fs.writeFileSync(".msg.txt", message);
 
-            let fileUploadElement = await this.page.$(
-                ".ChatMessageFileInputButton_input__svNx4"
-            );
+            let fileUploadElement = await this.page.$(FILE_ATTACH_CLASS);
             await fileUploadElement.uploadFile(".msg.txt");
 
             await delay(20);
@@ -366,16 +405,13 @@ class PoeClient {
 
             let waitingForMessage = true;
             while (waitingForMessage) {
-                if (
-                    (await this.page.$(".Message_botMessageBubble__aYctV")) ===
-                    null
-                ) {
+                if ((await this.page.$(MESSAGE_BUBBLE_CLASS)) === null) {
                     await delay(5);
                     continue;
                 }
 
                 let lastMessage = await this.page.$$eval(
-                    ".Message_botMessageBubble__aYctV",
+                    MESSAGE_BUBBLE_CLASS,
                     (allMessages) => {
                         return allMessages[allMessages.length - 1].innerHTML;
                     }
@@ -403,16 +439,11 @@ class PoeClient {
         let stillGenerating = await this.isGenerating();
         if (!stillGenerating) return false;
 
-        if (
-            (await this.page.$(".ChatStopMessageButton_stopButton__QOW41")) ===
-            null
-        ) {
+        if ((await this.page.$(STOP_BUTTON_CLASS)) === null) {
             return false;
         }
 
-        await this.page
-            .locator(".ChatStopMessageButton_stopButton__QOW41")
-            .click();
+        await this.page.locator(STOP_BUTTON_CLASS).click();
 
         await delay(100);
         return true;
@@ -422,7 +453,7 @@ class PoeClient {
         let stillGenerating = await this.isGenerating();
         if (stillGenerating) await this.abortMessage();
 
-        await this.page.locator(".ChatBreakButton_button__zyEye").click();
+        await this.page.locator(PURGE_CHAT_CLASS).click();
 
         return true;
     }
@@ -436,15 +467,12 @@ class PoeClient {
         // a bit of throttling fixes it
         if (!streaming) await delay(250);
 
-        if ((await this.page.$(".Message_noSignIcon__11Dy5")) !== null) {
+        if ((await this.page.$(TOKEN_EXCEEDED_MESSAGE_CLASS)) !== null) {
             throw new Error("ERROR: Token window exceeded!!!!!!!!!");
         }
 
         // Temporarly changed to detect message status by its action bar instead of suggestions
-        if (
-            (await this.page.$(".ChatMessageActionBar_actionBar__gyeEs")) !==
-            null
-        ) {
+        if ((await this.page.$(MESSAGE_ACTION_BAR_CLASS)) !== null) {
             return false;
         }
 
@@ -456,7 +484,7 @@ class PoeClient {
         await delay(5000);
 
         let suggestedMessages = await this.page.$$eval(
-            ".ChatMessageSuggestedReplies_suggestedReply__dmJO1",
+            SUGGESTED_REPLY_CLASS,
             (allMessages) => {
                 return allMessages.map(
                     (message) => message.childNodes[0].textContent
@@ -474,58 +502,73 @@ class PoeClient {
     async deleteMessages(count) {
         // Poe decided not to show triple dot buttons for long messages, rendering it only if the message header
         // is in the view. This scrolls to it, forcing it to be shown before initializing further operations.
-        await this.page.evaluate(() => {
-            let messageElements = document.querySelectorAll(
-                ".ChatMessage_chatMessage__xkgHx"
-            );
-            messageElements[messageElements.length - 1].scrollIntoView();
+        await this.page.evaluate(
+            (
+                messageContainerClass,
+                errorMessageContainerClass,
+                threeDotContainerClass
+            ) => {
+                let messageElements = document.querySelectorAll(
+                    messageContainerClass
+                );
+                messageElements[messageElements.length - 1].scrollIntoView();
 
-            // Poe can sometimes lose connection to its servers, creating an element unusable for purging
-            // the conversation, creating issues in purge logic. This code moves the focus to an element
-            // above the last if such an error is detected.
-            if (
-                document.querySelectorAll(".Message_errorBubble__Bl92G")
-                    .length === 0
-            ) {
-                let allThreeDotsButtons = document.querySelectorAll(
-                    ".ChatMessageOverflowButton_overflowButtonWrapper__gzb2s"
-                );
-                allThreeDotsButtons[allThreeDotsButtons.length - 1].click();
-            } else {
-                messageElements[messageElements.length - 2].scrollIntoView();
-                let allThreeDotsButtons = document.querySelectorAll(
-                    ".ChatMessageOverflowButton_overflowButtonWrapper__gzb2s"
-                );
-                allThreeDotsButtons[allThreeDotsButtons.length - 2].click();
-                //count += 1;
-            }
-        });
+                // Poe can sometimes lose connection to its servers, creating an element unusable for purging
+                // the conversation, creating issues in purge logic. This code moves the focus to an element
+                // above the last if such an error is detected.
+                if (
+                    document.querySelectorAll(errorMessageContainerClass)
+                        .length === 0
+                ) {
+                    let allThreeDotsButtons = document.querySelectorAll(
+                        threeDotContainerClass
+                    );
+                    allThreeDotsButtons[allThreeDotsButtons.length - 1].click();
+                } else {
+                    messageElements[
+                        messageElements.length - 2
+                    ].scrollIntoView();
+                    let allThreeDotsButtons = document.querySelectorAll(
+                        threeDotContainerClass
+                    );
+                    allThreeDotsButtons[allThreeDotsButtons.length - 2].click();
+                    //count += 1;
+                }
+            },
+            MESSAGE_CONTAINER_CLASS,
+            ERROR_MESSAGE_CLASS,
+            THREE_DOT_MENU_CLASS
+        );
 
         await this.page
-            .locator(".DropdownMenuItem_destructive__Bi9MD")
+            .locator(DROPDOWN_DELETE_BUTTON_CLASS)
             .setEnsureElementIsInTheViewport(false)
             .setVisibility(null)
             .click();
 
         await delay(100);
 
-        await this.page.evaluate((c) => {
-            let allMessageContainers = document.querySelectorAll(
-                ".ChatMessage_messageRow__DHlnq"
-            );
-            for (
-                let i = allMessageContainers.length - 2;
-                i > allMessageContainers.length - 1 - c;
-                i--
-            ) {
-                allMessageContainers[i].click();
-            }
-        }, count);
+        await this.page.evaluate(
+            (c, messageContainerClass) => {
+                let allMessageContainers = document.querySelectorAll(
+                    messageContainerClass
+                );
+                for (
+                    let i = allMessageContainers.length - 2;
+                    i > allMessageContainers.length - 1 - c;
+                    i--
+                ) {
+                    allMessageContainers[i].click();
+                }
+            },
+            count,
+            FULL_MESSAGE_CONTAINER_CLASS
+        );
 
         await delay(100);
 
         await this.page
-            .locator(".ChatPageDeleteFooter_button__6xWPc")
+            .locator(DELETE_BUTTON_CLASS)
             .setEnsureElementIsInTheViewport(false)
             .setVisibility(null)
             .click();
@@ -536,30 +579,24 @@ class PoeClient {
         // Apparently, Poe updated the button classes in said modal, making the previous method to confirm the deletion not work.
         // HUGE thanks to LegendPoet for providing this fix!!!
 
-        await this.page.waitForSelector(
-            "div.MessageDeleteConfirmationModal_options__31rdn>button.Button_danger__Xy8Ox"
-        );
+        await this.page.waitForSelector(DELETE_CONFIRM_BUTTON_SELECTOR);
 
-        await this.page.evaluate(() => {
-            document
-                .querySelector(
-                    "div.MessageDeleteConfirmationModal_options__31rdn>button.Button_danger__Xy8Ox"
-                )
-                .click();
-        });
+        await this.page.evaluate((classname) => {
+            document.querySelector(classname).click();
+        }, DELETE_CONFIRM_BUTTON_SELECTOR);
     }
 
     async getBotNames(page = this.page) {
-        await page.evaluate(() => {
-            [...document.querySelectorAll(".SidebarItem_label__Ug6_M")]
+        await page.evaluate((classname) => {
+            [...document.querySelectorAll(classname)]
                 .filter((_) => _.innerHTML === "Your bots")[0]
                 .click();
-        });
+        }, SIDEBAR_ITEM_CLASS);
 
         // Basically, scroll a bunch of times so that all bots are loaded.
         // The scroll trigger element gets populated while loading, so if it's no longer loading then that means no new bots are going to
         // be loaded
-        await page.waitForSelector(".InfiniteScroll_pagingTrigger__cdz9I");
+        await page.waitForSelector(INFINITE_SCROLL_CLASS);
 
         //let stillMoreBotsToLoad = true;
 
@@ -570,12 +607,10 @@ class PoeClient {
         // Although, this also means that we can safely iterate for a bit, since
         // not a lot of latency is created.
 
-        while (/* stillMoreBotsToLoad || */ safetyCounter < 4) {
-            await page.evaluate(() => {
-                document
-                    .querySelector(".InfiniteScroll_pagingTrigger__cdz9I")
-                    .scrollIntoView();
-            });
+        while (/* stillMoreBotsToLoad || */ safetyCounter < 6) {
+            await page.evaluate((classname) => {
+                document.querySelector(classname).scrollIntoView();
+            }, INFINITE_SCROLL_CLASS);
 
             /* await delay(100);
 
@@ -591,7 +626,7 @@ class PoeClient {
         }
 
         let botNames = await page.$$eval(
-            ".BotHeader_textContainer__kVf_I",
+            BOT_NAME_CONTAINER_CLASS,
             (containers) => {
                 return containers.map(
                     (container) => container.childNodes[0].innerHTML
@@ -599,9 +634,9 @@ class PoeClient {
             }
         );
 
-        await page.evaluate(() => {
-            document.querySelector(".Modal_closeButton__GycnR").click();
-        });
+        await page.evaluate((classname) => {
+            document.querySelector(classname).click();
+        }, GENERIC_MODAL_CLOSE_CLASS);
 
         return Array.from(new Set(botNames));
     }
@@ -615,9 +650,9 @@ class PoeClient {
         }
         await this.page.goto(`https://poe.com/${this.botName}`);
         try {
-            await this.page.evaluate(() => {
-                document.querySelector(".Modal_closeButton__GycnR").click();
-            });
+            await this.page.evaluate((classname) => {
+                document.querySelector(classname).click();
+            }, GENERIC_MODAL_CLOSE_CLASS);
         } catch {
             //do nothing for now lmao
         }
@@ -626,16 +661,12 @@ class PoeClient {
     }
 
     async checkRemainingMessages() {
-        if (
-            (await this.page.$(
-                ".ChatMessageSendButton_noFreeMessageTooltip__9IhzY"
-            )) === null
-        ) {
+        if ((await this.page.$(OUT_OUF_MESSAGES_CLASS)) === null) {
             return true;
         }
 
         let remainingMessagesElem = await this.page.$eval(
-            ".ChatMessageSendButton_noFreeMessageTooltip__9IhzY",
+            OUT_OUF_MESSAGES_CLASS,
             (elem) => elem
         );
 
