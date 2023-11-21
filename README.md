@@ -51,6 +51,7 @@ For getting it to work any other operating system, please contact me!
 - Performance depends somewhat on the device, currently averaging 6 seconds on PC and 12 seconds on android
 - On mobile, streaming and adding a bot is hit-or-miss, as some messages fail to get sent, causing all kinds of issues. Until a fix is found, I advice sticking to non-streaming on mobile, although it can still work.
 - Lately, Poe has been behaiving in a weird manner. Looks like general context windows for some bots have been decreased. Currently being investigated.
+- Authentication issues for users in certain countries, mostly Eastern Europe and South America. Currently being investigated, but seems to be an issue on Poe side, not affected by any changes in the client itself.
 
 ## Recent fixes/features
 - The bot now tries to connect multiple times before throwing out the expired API token error. This is made to alleviate the issue of Poe sometimes falsely marking the user as logged out, forcing the user to press Connect again
@@ -85,6 +86,11 @@ For getting it to work any other operating system, please contact me!
 - Increased Poe token length limit to accomodate for using multiple tokens at once
 - Fixed the fix not working if system language is set to anything other than English. Apparently, Poe now ignores browser's navigator.languages setting, instead opting out for system languages set in the browser itself. To avoid messing with users' browsers, made it so language change happens in Poe itself.
 - Refactored poe-client.js slightly to allow for quicker fixing if classnames change in the future
+- Refactored flowgpt-client.js slightly to allow for quicker fixing if classnames or other selectors change in the future
+- Fixed FlowGPT not connecting due to the recent design overhaul on their site
+- Fixed bugs in poe-client's addBot function
+- Added the ability to add a bot on FlowGPT without leaving SillyTavern
+- Added a switch to manage whether a new chat should be started or current chat should be cleaned when purge chat is invoked
 
 ## Contact
 Please drop me a message on [Matrix](https://matrix.to/#/@glizzychief:techsaviours.org) or Discord (glizzychief#1048) if you have any questions or just want to say hi.

@@ -716,7 +716,7 @@ class PoeClient {
 
         if ((await this.page.$(".next-error-h1")) !== null) {
             console.log(`Couldn't add bot ${botName} - bot not found!`);
-            await this.page.goBack();
+            await this.page.goto(currentPage);
             return { error: true };
         }
 
@@ -728,7 +728,7 @@ class PoeClient {
             console.log(
                 `Couldn't add bot ${botName} - error during sending message`
             );
-            await this.page.goBack();
+            await this.page.goto(currentPage);
             return { error: true };
         }
 

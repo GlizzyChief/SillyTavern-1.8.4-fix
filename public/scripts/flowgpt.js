@@ -50,8 +50,6 @@ const DEFAULT_CHARACTER_NUDGE_MESSAGE =
 const DEFAULT_IMPERSONATION_PROMPT =
     "[Write a reply only from the point of view of {{user}}, using the chat history so far as a guideline for the writing style of {{user}}. Don't write as {{char}} or system.]";
 
-const DEFAULT_FILE_INSTRUCTION = "Follow the instructions provided here:";
-
 const flowgpt_settings = {
     bot: "ChatGPT",
     jailbreak_response: DEFAULT_JAILBREAK_RESPONSE,
@@ -302,6 +300,49 @@ async function onConnectClick() {
     }
 }
 
+async function onBotAddClick() {
+    let botName = $("#flowgpt_add_bot_name").val().trim();
+
+    if (botName === "") {
+        toastr.error("Enter a proper bot name first!");
+        return;
+    }
+
+    $("#flowgpt_add_bot").css("display", "none");
+    $("#flowgpt_add_bot_loading").css("display", "inline-block");
+
+    const body = JSON.stringify({ botToAdd: botName });
+
+    const response = await fetch("/add_flowgpt_bot", {
+        headers: getRequestHeaders(),
+        body: body,
+        method: "POST",
+    });
+
+    const data = await response.json();
+
+    if (!data.ok) {
+        $("#flowgpt_add_bot").css("display", "block");
+        $("#flowgpt_add_bot_loading").css("display", "none");
+        toastr.error(`Bot ${botName} was not found`);
+        return;
+    }
+
+    $("#flowgpt_bots").empty();
+
+    for (const [value, name] of Object.entries(data.botNames)) {
+        const option = document.createElement("option");
+        option.value = value;
+        option.innerText = name;
+        $("#flowgpt_bots").append(option);
+    }
+
+    selectBot();
+    $("#flowgpt_add_bot").css("display", "block");
+    $("#flowgpt_add_bot_loading").css("display", "none");
+    $("#flowgpt_add_bot_name").val("");
+}
+
 function setButtonState(value) {
     is_flowgpt_button_press = value;
     $("#api_loading_flowgpt").css("display", value ? "inline-block" : "none");
@@ -430,4 +471,5 @@ $("document").ready(function () {
     $("#flowgpt_activation_message_restore").on("click", onMessageRestoreClick);
     $("#flowgpt_send_jailbreak").on("click", onSendJailbreakClick);
     $("#flowgpt_purge_chat").on("click", onPurgeChatClick);
+    $("#flowgpt_add_bot").on("click", onBotAddClick);
 });

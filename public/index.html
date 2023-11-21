@@ -703,7 +703,16 @@
                                         <span>Send as file</span>
                                     </label>
                                     <div class="toggle-description justifyLeft">
-                                        Send message as a text file
+                                        Send message as a text file.
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <label for="poe_purge_instead_of_newchat" class="checkbox_label widthFreeExpand">
+                                        <input id="poe_purge_instead_of_newchat" type="checkbox" />
+                                        <span>Purge by clearing context</span>
+                                    </label>
+                                    <div class="toggle-description justifyLeft">
+                                        When checked, purging chat will clear context on Poe instead of starting a new chat.
                                     </div>
                                 </div>
                             </div>
@@ -1841,6 +1850,16 @@
                                 </select>
                             </div>
                         </div>
+
+                        <div class="widthFreeExpand">
+                            <h4>Add another bot (part in url after /p/)</h4>
+                            <div class="flex-container">
+                                <input id="flowgpt_add_bot_name" class="text_pole flex1" type="text" maxlength="100" autocomplete="off" />
+                            </div>
+                        </div>
+
+                        <input id="flowgpt_add_bot" class="menu_button" type="button" value="Add bot" />
+                        <div id="flowgpt_add_bot_loading" class="api-load-icon fa-solid fa-hourglass fa-spin"></div>
 
                         <div class="online_status4">
                             <div class="online_status_indicator4"></div>

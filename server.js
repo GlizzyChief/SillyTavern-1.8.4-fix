@@ -3041,6 +3041,7 @@ app.post("/purge_poe", jsonParser, async (request, response) => {
 
     const bot = request.body.bot ?? POE_DEFAULT_BOT;
     const count = request.body.count ?? -1;
+    const clearContext = request.body.purge_instead_of_newchat ?? false;
 
     console.log(`!!!!!!!!!!!! NEED TO PURGE ${count} MESSAGES!`);
 
@@ -3056,7 +3057,7 @@ app.post("/purge_poe", jsonParser, async (request, response) => {
 
         if (count > 0) {
             await client.deleteMessages(count);
-        } else if (count === -1) {
+        } else if (count === -1 && !clearContext) {
             await client.newChat();
         } else {
             await client.clearContext();
@@ -3531,6 +3532,46 @@ app.post("/generate_flowgpt", jsonParser, async (request, response) => {
         return response.send(reply);
     } catch {
         //client.disconnect_ws();
+        return response.sendStatus(500);
+    }
+});
+
+app.post("/add_flowgpt_bot", jsonParser, async (request, response) => {
+    const token = readSecret(SECRET_KEYS.FLOWGPT);
+
+    if (!token) {
+        return response.sendStatus(401);
+    }
+
+    const botToAdd = request.body.botToAdd;
+
+    console.log(`Trying to add bot ${botToAdd} FLOWGPT!!`);
+
+    try {
+        let client;
+
+        try {
+            client = await getFlowGPTClient(token, true);
+        } catch (error) {
+            console.error(error);
+            return response.sendStatus(500);
+        }
+
+        let addBotOutput = await client.addBot(botToAdd);
+
+        if (addBotOutput.error) {
+            console.log(
+                "Couldn't add bot - check the console for more details"
+            );
+            return response.send({ ok: false });
+        }
+
+        let newBotNames = addBotOutput.newBotNames;
+        botNames = newBotNames;
+
+        return response.send({ ok: true, botNames: newBotNames });
+    } catch (err) {
+        console.error(err);
         return response.sendStatus(500);
     }
 });

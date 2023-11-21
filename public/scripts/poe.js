@@ -65,6 +65,7 @@ const poe_settings = {
     poe_token_length: POE_TOKEN_LENGTH,
     send_as_file: false,
     chunked_prompt_length: CHUNKED_PROMPT_LENGTH,
+    purge_instead_of_newchat: false,
 };
 
 let auto_jailbroken = false;
@@ -94,6 +95,9 @@ function loadPoeSettings(settings) {
     $("#poe_token_length").val(poe_settings.poe_token_length);
     $("#poe_send_as_file").val(poe_settings.send_as_file);
     $("#poe_file_instruction").val(poe_settings.file_instruction);
+    $("#poe_purge_instead_of_newchat").val(
+        poe_settings.purge_instead_of_newchat
+    );
     selectBot();
 }
 
@@ -414,6 +418,7 @@ async function purgeConversation(count = -1) {
     const body = JSON.stringify({
         bot: poe_settings.bot,
         count,
+        purge_instead_of_newchat: poe_settings.purge_instead_of_newchat,
     });
 
     const response = await fetch("/purge_poe", {
@@ -708,6 +713,10 @@ function onFileInstructionRestoreClick() {
     saveSettingsDebounced();
 }
 
+function onPurgeInsteadOfNewChatInput() {
+    poe_settings.purge_instead_of_newchat = !!$(this).prop("checked");
+}
+
 $("document").ready(function () {
     $("#poe_bots").on("change", onBotChange);
     $("#poe_connect").on("click", onConnectClick);
@@ -719,6 +728,10 @@ $("document").ready(function () {
     $("#poe_nudge_text").on("input", onCharacterNudgeMessageInput);
     $("#poe_streaming").on("input", onStreamingInput);
     $("#poe_send_as_file").on("input", onSendAsFileInput);
+    $("#poe_purge_instead_of_newchat").on(
+        "input",
+        onPurgeInsteadOfNewChatInput
+    );
     $("#poe_impersonation_prompt").on("input", onImpersonationPromptInput);
     $("#poe_impersonation_prompt_restore").on(
         "click",
