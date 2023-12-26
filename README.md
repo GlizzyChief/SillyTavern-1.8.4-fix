@@ -50,8 +50,8 @@ For getting it to work any other operating system, please contact me!
 - On Windows, sometimes it's necessary to put the browser into non-headless mode.
 - Performance depends somewhat on the device, currently averaging 6 seconds on PC and 12 seconds on android
 - On mobile, streaming and adding a bot is hit-or-miss, as some messages fail to get sent, causing all kinds of issues. Until a fix is found, I advice sticking to non-streaming on mobile, although it can still work.
-- Lately, Poe has been behaiving in a weird manner. Looks like general context windows for some bots have been decreased. Currently being investigated.
-- Authentication issues for users in certain countries, mostly Eastern Europe and South America. Currently being investigated, but seems to be an issue on Poe side, not affected by any changes in the client itself.
+- Lately, Poe has been behaiving in a weird manner. Looks like general context windows for some bots have been decreased. Some bots still experience the reduced amount of available tokens
+
 
 ## Recent fixes/features
 - The bot now tries to connect multiple times before throwing out the expired API token error. This is made to alleviate the issue of Poe sometimes falsely marking the user as logged out, forcing the user to press Connect again
@@ -91,6 +91,11 @@ For getting it to work any other operating system, please contact me!
 - Fixed bugs in poe-client's addBot function
 - Added the ability to add a bot on FlowGPT without leaving SillyTavern
 - Added a switch to manage whether a new chat should be started or current chat should be cleaned when purge chat is invoked
+- Added a setting to regenerate a message right after sending (via edit) in FlowGPT to prevent messages from following a similiar style when regenerating (in ST)
+- Slightly altered streaming logic to prevent last message from getting appended before the message that's being generated
+- Added a setting to modify Fast Reply prompt sent to Poe when using message chunking
+- Added a way to change message timeout settings. You can change the default timeout of 2 minutes by modifying config.conf
+- Fixed Poe timing out randomly during connection (particularly on /settings)
 
 ## Contact
 Please drop me a message on [Matrix](https://matrix.to/#/@glizzychief:techsaviours.org) or Discord (glizzychief#1048) if you have any questions or just want to say hi.

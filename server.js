@@ -3175,6 +3175,8 @@ app.post("/generate_poe", jsonParser, async (request, response) => {
                 await client.changeBot(botNames[parseInt(bot)]);
             }
 
+            let oldReply = await client.getLatestMessage();
+
             if (sendAsFile) {
                 await client.sendFileMessage(prompt, fileInstruction);
             } else {
@@ -3208,7 +3210,11 @@ app.post("/generate_poe", jsonParser, async (request, response) => {
                 let newReply = await client.getLatestMessageStreaming();
 
                 // Just a failsafe due to bot's cut-off name being registered as actual text.
-                if (newReply === "..." || newReply.length < 20) {
+                if (
+                    newReply === "..." ||
+                    newReply.length < 20 ||
+                    newReply === oldReply
+                ) {
                     await delay(100);
                     continue;
                 }
@@ -3265,14 +3271,14 @@ app.post("/generate_poe", jsonParser, async (request, response) => {
                     waitingForMessage = false;
                 }
                 let milliSecondsElapsed = Math.floor(Date.now() - startTime);
-                if (milliSecondsElapsed > 120000) {
+                if (milliSecondsElapsed > config.poeMessageTimeout) {
                     // Currently only informative, should get properly handled in the future
 
                     console.error(
-                        "!!!!!!!!!!!!!!!!!!!ERROR: message timeout. Message is taking longer than 2 minutes to get generated!!!!!!!!!!!!!!!!!!!"
+                        "!!!!!!!!!!!!!!!!!!!ERROR: message timeout. Message is taking longer configured timeout to get generated!!!!!!!!!!!!!!!!!!!"
                     );
                     return response.send(
-                        "Message timeout after more than 2 minutes. Please try regenerating the message."
+                        "Message timeout. Please try regenerating the message or changing message timeout settings."
                     );
                 }
             }
@@ -3494,6 +3500,7 @@ app.post("/generate_flowgpt", jsonParser, async (request, response) => {
     const bot = request.body.bot ?? FLOWGPT_DEFAULT_BOT;
 
     const editLastMessage = request.body.editLastMessage;
+    const regenerateAfterEditing = request.body.regenerateAfterEditing;
 
     let client;
 
@@ -3513,6 +3520,10 @@ app.post("/generate_flowgpt", jsonParser, async (request, response) => {
 
         if (editLastMessage) {
             await client.editLastSentMessage(prompt);
+            if (regenerateAfterEditing) {
+                await client.abortMessage();
+                await client.regenerateMessage();
+            }
         } else {
             await client.sendMessage(prompt);
         }

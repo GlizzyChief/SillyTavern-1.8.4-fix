@@ -22,7 +22,7 @@ const BOT_NAME_SELECTOR = ".css-1gg4f8a";
 const MESSAGE_MARKDOWN_CONTAINER_SELECTOR = ".flowgpt-markdown";
 const MAIN_TEXTAREA_SELECTOR = "textarea.chakra-textarea";
 const MESSAGE_EDIT_BUTTON_SELECTOR =
-    "#chat-container > div > div.gap-2 > div > div > div > div:nth-child(3) > div > div:nth-child(2)";
+    "#chat-container > div > div:nth-child(4) > div > div > div.opacity-0.transition-opacity.group-hover\\:opacity-100 > div > div:nth-child(3) > div > div:nth-child(2)";
 const EDIT_TEXTAREA_SELECTOR = "textarea.block";
 const EDIT_CONFIRM_BUTTON_SELECTOR = "div.flex.gap-2.absolute>svg:nth-child(2)";
 const REGENERATE_MESSAGE_SELECTOR =
@@ -284,18 +284,19 @@ class FlowGPTClient {
 
             // Copied from a function above for convenience, will modify once it moves from PoC state
             await this.page.evaluate(
-                (message, EDIT_TEXTAREA_SELECTOR) => {
-                    let tarea = document.querySelector(EDIT_TEXTAREA_SELECTOR);
+                (params) => {
+                    let tarea = document.querySelector("textarea.block");
                     tarea.click();
                     tarea.focus();
-                    tarea.value = message;
+                    tarea.value = params.message;
                     while (tarea.value === "") {
-                        tarea.value = message;
+                        tarea.value = params.message;
                     }
                 },
-                message,
-                EDIT_TEXTAREA_SELECTOR
+                { message, selector: EDIT_TEXTAREA_SELECTOR }
             );
+
+            await this.page.waitForSelector(EDIT_TEXTAREA_SELECTOR);
 
             let inputElement = await this.page.$(EDIT_TEXTAREA_SELECTOR);
 
@@ -335,6 +336,11 @@ class FlowGPTClient {
     async regenerateMessage() {
         try {
             console.log(`DEBUG: Attempting to regenerate last message...`);
+
+            await delay(500);
+            if (await this.isGenerating()) await this.abortMessage();
+
+            await this.page.waitForSelector(REGENERATE_MESSAGE_SELECTOR);
 
             await this.page.evaluate((REGENERATE_MESSAGE_SELECTOR) => {
                 document

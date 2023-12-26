@@ -758,6 +758,15 @@
                                         Sent with every prompt to modify bot responses.
                                     </div>
                                 </div>
+                                <div class="range-block">
+                                    <label for="flowgpt_regenerate_after_editing" class="checkbox_label widthFreeExpand">
+                                        <input id="flowgpt_regenerate_after_editing" type="checkbox"><span data-i18n="Auto-jailbreak">
+                                            Regenerate after editing</span>
+                                    </label>
+                                    <div class="toggle-description justifyLeft">
+                                        Regenerates the message after editing it on FlowGPT.
+                                    </div>
+                                </div>
                             </div>
                             <hr>
                         </div>
@@ -1393,8 +1402,21 @@
                                         <textarea id="poe_file_instruction" class="text_pole textarea_compact" rows="6" maxlength="2500"></textarea>
                                     </div>
                                 </div>
+                                <div class="range-block">
+                                    <div class="range-block-title justifyLeft poe_restorable">
+                                        <span>Fast reply prompt</span>
+                                        <div id="poe_fast_reply_prompt_restore" title="Restore default fast reply prompt" class="right_menu_button">
+                                            <div class="fa-solid fa-clock-rotate-left"></div>
+                                        </div>
+                                    </div>
+                                    <div class="toggle-description justifyLeft">
+                                        Prompt that is sent after message chunks if using batching
+                                    </div>
+                                    <div class="wide100p">
+                                        <textarea id="poe_fast_reply_prompt" class="text_pole textarea_compact" rows="6" maxlength="2500"></textarea>
+                                    </div>
+                                </div>
                             </div>
-
                             <div id="flowgpt_settings">
                                 <div class="range-block">
                                     <div class="range-block-title justifyLeft flowgpt_restorable">

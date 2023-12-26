@@ -59,6 +59,7 @@ const flowgpt_settings = {
     auto_jailbreak: true,
     character_nudge: true,
     auto_purge: true,
+    regenerate_after_editing: false,
 };
 
 let auto_jailbroken = false;
@@ -88,6 +89,10 @@ function loadFlowGPTSettings(settings) {
     $("#flowgpt_auto_purge").prop("checked", flowgpt_settings.auto_purge);
     $("#flowgpt_impersonation_prompt").val(
         flowgpt_settings.impersonation_prompt
+    );
+    $("#flowgpt_regenerate_after_editing").prop(
+        "checked",
+        flowgpt_settings.regenerate_after_editing
     );
     selectBot();
 }
@@ -246,19 +251,20 @@ async function sendMessage(prompt, signal) {
 
     await rateLimiter.waitForResolve(signal);
 
+    let editLastMessage = messages_to_purge === 1;
+
     const body = JSON.stringify({
         bot: flowgpt_settings.bot,
         prompt,
+        editLastMessage: editLastMessage,
+        regenerateAfterEditing: true, //flowgpt_settings.regenerate_after_editing,
     });
-
-    let editLastMessage = messages_to_purge === 1;
 
     const response = await fetch("/generate_flowgpt", {
         headers: getRequestHeaders(),
         body: body,
         method: "POST",
         signal: signal,
-        editLastMessage: editLastMessage,
     });
 
     try {
@@ -446,6 +452,11 @@ function onMessageRestoreClick() {
     saveSettingsDebounced();
 }
 
+function onRegenerateAfterEditingInput() {
+    flowgpt_settings.regenerate_after_editing = !!$(this).prop("checked");
+    saveSettingsDebounced();
+}
+
 $("document").ready(function () {
     $("#flowgpt_bots").on("change", onBotChange);
     $("#flowgpt_connect").on("click", onConnectClick);
@@ -472,4 +483,8 @@ $("document").ready(function () {
     $("#flowgpt_send_jailbreak").on("click", onSendJailbreakClick);
     $("#flowgpt_purge_chat").on("click", onPurgeChatClick);
     $("#flowgpt_add_bot").on("click", onBotAddClick);
+    $("#flowgpt_regenerate_after_editing").on(
+        "input",
+        onRegenerateAfterEditingInput
+    );
 });

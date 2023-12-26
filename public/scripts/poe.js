@@ -50,6 +50,9 @@ const DEFAULT_IMPERSONATION_PROMPT =
 
 const DEFAULT_FILE_INSTRUCTION = "Follow the instructions provided here:";
 
+const DEFAULT_FAST_REPLY_PROMPT =
+    "\n[Reply to this message with a full stop only]";
+
 const poe_settings = {
     bot: "GPTforST",
     jailbreak_response: DEFAULT_JAILBREAK_RESPONSE,
@@ -66,6 +69,7 @@ const poe_settings = {
     send_as_file: false,
     chunked_prompt_length: CHUNKED_PROMPT_LENGTH,
     purge_instead_of_newchat: false,
+    fast_reply_prompt: DEFAULT_FAST_REPLY_PROMPT,
 };
 
 let auto_jailbroken = false;
@@ -98,6 +102,7 @@ function loadPoeSettings(settings) {
     $("#poe_purge_instead_of_newchat").val(
         poe_settings.purge_instead_of_newchat
     );
+    $("#poe_fast_reply_prompt").val(poe_settings.fast_reply_prompt);
     selectBot();
 }
 
@@ -364,7 +369,7 @@ async function sendChunkedMessage(
     withSuggestions,
     signal
 ) {
-    const fastReplyPrompt = "\n[Reply to this message with a full stop only]";
+    const fastReplyPrompt = poe_settings.fast_reply_prompt;
     const promptChunks = splitRecursive(
         finalPrompt,
         poe_settings.chunked_prompt_length - fastReplyPrompt.length
@@ -717,6 +722,17 @@ function onPurgeInsteadOfNewChatInput() {
     poe_settings.purge_instead_of_newchat = !!$(this).prop("checked");
 }
 
+function onFastReplyPromptInput() {
+    poe_settings.fast_reply_prompt = $(this).val();
+    saveSettingsDebounced();
+}
+
+function onFastReplyPromptRestoreClick() {
+    poe_settings.fast_reply_prompt = DEFAULT_FAST_REPLY_PROMPT;
+    $("#poe_fast_reply_prompt").val(poe_settings.fast_reply_prompt);
+    saveSettingsDebounced();
+}
+
 $("document").ready(function () {
     $("#poe_bots").on("change", onBotChange);
     $("#poe_connect").on("click", onConnectClick);
@@ -755,6 +771,11 @@ $("document").ready(function () {
     $("#poe_file_instruction_restore").on(
         "click",
         onFileInstructionRestoreClick
+    );
+    $("#poe_fast_reply_prompt").on("input", onFastReplyPromptInput);
+    $("#poe_fast_reply_prompt_restore").on(
+        "click",
+        onFastReplyPromptRestoreClick
     );
     $("#poe_add_bot").on("click", onBotAddClick);
     $(document).on("click", ".suggested_reply", onSuggestedReplyClick);

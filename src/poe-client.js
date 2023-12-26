@@ -153,7 +153,7 @@ class PoeClient {
         await delay(1000);
 
         await this.page.goto("https://poe.com/settings", {
-            waitUntil: "networkidle0",
+            waitUntil: "networkidle2",
         });
 
         try {
