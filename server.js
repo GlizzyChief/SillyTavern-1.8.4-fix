@@ -3520,10 +3520,11 @@ app.post("/generate_flowgpt", jsonParser, async (request, response) => {
 
         if (editLastMessage) {
             await client.editLastSentMessage(prompt);
-            if (regenerateAfterEditing) {
+            /* if (regenerateAfterEditing) {
                 await client.abortMessage();
                 await client.regenerateMessage();
             }
+            */
         } else {
             await client.sendMessage(prompt);
         }

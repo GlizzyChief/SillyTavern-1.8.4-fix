@@ -46,11 +46,19 @@ It should work by default on OSX, but please reach out if you're having issues w
 ## Other OSes
 For getting it to work any other operating system, please contact me!
 
+## In development
+- Integration with paid Poe API
+- Integration with prompt manager (for newer version)
+- Integration with FlowGPT's image generating models
+- Functionality to change bots' models and temperature (FlowGPT)
+- Work on author's notes, which crash after a yet uncertain threshold
+
 ## Known issues
-- On Windows, sometimes it's necessary to put the browser into non-headless mode.
+- On Windows, sometimes it's necessary to put the browser into non-headless mode
 - Performance depends somewhat on the device, currently averaging 6 seconds on PC and 12 seconds on android
-- On mobile, streaming and adding a bot is hit-or-miss, as some messages fail to get sent, causing all kinds of issues. Until a fix is found, I advice sticking to non-streaming on mobile, although it can still work.
+- On mobile, streaming and adding a bot is hit-or-miss, as some messages fail to get sent, causing all kinds of issues. Until a fix is found, I advice sticking to non-streaming on mobile, although it can still work
 - Lately, Poe has been behaiving in a weird manner. Looks like general context windows for some bots have been decreased. Some bots still experience the reduced amount of available tokens
+- FlowGPT randomly banning sessions. Logging out and in again resolves it
 
 
 ## Recent fixes/features
@@ -96,6 +104,9 @@ For getting it to work any other operating system, please contact me!
 - Added a setting to modify Fast Reply prompt sent to Poe when using message chunking
 - Added a way to change message timeout settings. You can change the default timeout of 2 minutes by modifying config.conf
 - Fixed Poe timing out randomly during connection (particularly on /settings)
+- Fixed (turned off) message regenerating in FlowGPT. The site no longer provides the ability to do so
+- Removed forced waiting for modal on flowgpt loading, which caused accounts that disabled modals to crash
+- Added logging for detecting Cloudflare bans
 
 ## Contact
 Please drop me a message on [Matrix](https://matrix.to/#/@glizzychief:techsaviours.org) or Discord (glizzychief#1048) if you have any questions or just want to say hi.

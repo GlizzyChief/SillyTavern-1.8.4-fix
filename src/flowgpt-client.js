@@ -150,24 +150,35 @@ class FlowGPTClient {
             waitUntil: "domcontentloaded",
         });
 
+        let title = await this.page.title();
+        console.log(`DEBUG: Current page title: ${title}`);
+        if (title.includes("Attention Required!")) {
+            console.log(
+                "ERROR: your connection was blocked by FlowGPT. Please try using a VPN or switching to another server in case you are using one already."
+            );
+        }
+
         console.log("Waiting for modal to load...");
 
-        await this.page.waitForSelector(MODAL_CLOSE_SELECTOR);
+        try {
+            await this.page.waitForSelector(MODAL_CLOSE_SELECTOR);
 
-        await this.page.evaluate((MODAL_CLOSE_SELECTOR) => {
-            try {
-                document.querySelector(MODAL_CLOSE_SELECTOR).click();
-            } catch {}
-        }, MODAL_CLOSE_SELECTOR);
+            await this.page.evaluate((MODAL_CLOSE_SELECTOR) => {
+                try {
+                    document.querySelector(MODAL_CLOSE_SELECTOR).click();
+                } catch {}
+            }, MODAL_CLOSE_SELECTOR);
+        } catch {
+            console.log(
+                "Errors encountered while trying to close the modals. Perhaps you've already turned them off?"
+            );
+        }
 
         console.log("Waiting for bot names to be loaded...");
 
         await this.page.waitForSelector(BOT_NAME_SELECTOR);
 
         await delay(200);
-
-        let title = await this.page.title();
-        console.log(`DEBUG: Current page title: ${title}`);
 
         console.log("Switching to the chosen bot & starting a new chat...");
         await this.changeBot(this.botName);
@@ -333,6 +344,7 @@ class FlowGPTClient {
         }
     }
 
+    // FlowGPT seemingly removed the option to regenerate messages, so this is disabled for now.
     async regenerateMessage() {
         try {
             console.log(`DEBUG: Attempting to regenerate last message...`);
