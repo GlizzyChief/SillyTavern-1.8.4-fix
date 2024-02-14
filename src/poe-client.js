@@ -21,7 +21,7 @@ puppeteerWithPlugin.use(stealthPlugin);
 const OPEN_IN_APP_TOGGLER_CLASS = ".ToggleSwitch_slider__ih5sC";
 const LANGUAGE_SELECT_CLASS = ".Select_select__9vzGo";
 const MODAL_CLOSE_CLASS = ".Modal_closeButton__ZYPm5";
-const LOGGED_OUT_MODAL_CLASS = ".LoggedOutBotInfoPage_appButton__DZ5ol";
+const LOGGED_OUT_CLASS = ".TalkToBotButton_container__UJWM4";
 const CHAT_GROW_CLASS = ".ChatPageMain_flexGrow__UnM8q"; // Element that loads the rest of the chat when scrolling down
 const MESSAGE_BUBBLE_CLASS = ".Message_botMessageBubble__aYctV";
 const STOP_BUTTON_CLASS = ".ChatStopMessageButton_stopButton__QOW41";
@@ -51,10 +51,21 @@ class PoeClient {
     browser = null;
     page = null;
     botName = "gptforst";
+    poeLatCOokie = "";
 
-    constructor(poeCookie, botName) {
-        this.poeCookie = poeCookie;
+    constructor(poeCookie, botName, waitForAuth) {
         this.botName = botName;
+        this.waitForAuth = waitForAuth;
+
+        if (poeCookie.split("|").length === 1) {
+            this.poeCookie = poeCookie;
+            console.log(
+                "WARNING: Initializing without p-lat cookie. Poe may fail to authenticate!"
+            );
+        } else {
+            this.poeCookie = poeCookie.split("|")[0];
+            this.poeLatCookie = poeCookie.split("|")[1];
+        }
 
         console.log(`BOTNAME DURING INITIALIZING: ${this.botName}`);
     }
@@ -145,11 +156,22 @@ class PoeClient {
 
         // await delay(12000);
 
-        await this.page.goto("https://poe.com/");
+        await this.page.goto("https://poe.com/", { waitUntil: "networkidle2" });
         await delay(1000);
-        await this.page.setCookie({ name: "p-b", value: this.poeCookie });
+        // Wait for user to authenticate manually if enabled
+        if (this.waitForAuth > 0) {
+            await delay(this.waitForAuth);
+        } else {
+            await this.page.setCookie({ name: "p-b", value: this.poeCookie });
+            if (this.poeLatCookie !== "") {
+                await this.page.setCookie({
+                    name: "p-lat",
+                    value: this.poeLatCookie,
+                });
+            }
+        }
         await delay(1000);
-        await this.page.goto("https://poe.com");
+        await this.page.goto("https://poe.com/", { waitUntil: "networkidle2" });
         await delay(1000);
 
         await this.page.goto("https://poe.com/settings", {
@@ -210,9 +232,9 @@ class PoeClient {
             }
         }
 
-        if ((await this.page.$(LOGGED_OUT_MODAL_CLASS)) !== null) {
+        if ((await this.page.$(LOGGED_OUT_CLASS)) !== null) {
             console.log(
-                "Poe.com did not authenticate with the provided cookie - Logged out wrapper was present on the page!"
+                "Poe.com did not authenticate with the provided cookie - Logged out button was present on the page!"
             );
             return false;
         }

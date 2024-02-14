@@ -1,13 +1,15 @@
 # SillyTavern-1.8.4-fix
 
 This is a patched version of SillyTavern 1.8.4 which adds support for Poe and FlowGPT using Puppeteer.
-It can be used the same way as SillyTavern 1.8.4. Just input your p-b cookie, the path to chromium on your device and have a blast!
+It can be used the same way as SillyTavern 1.8.4. Just input your p-b cookie (and p-lat cookie optionally), the path to chromium on your device and have a blast!
 
 If you want to use it with the latest version of SillyTavern, please check out [The amazing work done by LegendPoet](https://github.com/LegendPoet/SillyTavern-fix)
 
 # Instructions
 
 IMPORTANT!!!
+Poe has introduced a new cookie 'p-lat' the lack of which often breaks authentication. If you're having issues with connecting, please try adding both p-b and p-lat cookie in the format: p-b|p-lat and connecting. It's important to separate them only with a single | character.
+
 Before moving further, please disable "Try to open links in app" in Poe settings (poe.com/settings). Alternatively, just conect 2 times in a row. This must be done only once for each account.
 
 If you want to use multiple cookies for bypassing 100 message limit, please write them separated by a comma in connection settings, i.e. where you'd input your cookie usually.
@@ -52,6 +54,7 @@ For getting it to work any other operating system, please contact me!
 - Integration with FlowGPT's image generating models
 - Functionality to change bots' models and temperature (FlowGPT)
 - Work on author's notes, which crash after a yet uncertain threshold
+- Integration with anakin.ai
 
 ## Known issues
 - On Windows, sometimes it's necessary to put the browser into non-headless mode
@@ -107,6 +110,9 @@ For getting it to work any other operating system, please contact me!
 - Fixed (turned off) message regenerating in FlowGPT. The site no longer provides the ability to do so
 - Removed forced waiting for modal on flowgpt loading, which caused accounts that disabled modals to crash
 - Added logging for detecting Cloudflare bans
+- Fixed logged out detection
+- Added a way for users running it in non-headless mode to authenticate manually. To do it, simply change poeWaitForAuth in config.conf.
+- Fixed authentication not working
 
 ## Contact
 Please drop me a message on [Matrix](https://matrix.to/#/@glizzychief:techsaviours.org) or Discord (glizzychief#1048) if you have any questions or just want to say hi.

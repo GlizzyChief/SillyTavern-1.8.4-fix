@@ -2937,7 +2937,7 @@ async function instantiateClient(cookie) {
 
     let successfullyInitialized = false;
     for (let triesLeft = 3; triesLeft > 0; triesLeft--) {
-        client = new PoeClient(cookie, POE_DEFAULT_BOT);
+        client = new PoeClient(cookie, POE_DEFAULT_BOT, config.poeWaitForAuth);
         successfullyInitialized = await client.initializeDriver();
         if (!successfullyInitialized) {
             await client?.closeDriver();
