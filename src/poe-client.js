@@ -51,7 +51,7 @@ class PoeClient {
     browser = null;
     page = null;
     botName = "gptforst";
-    poeLatCOokie = "";
+    poeLatCookie = "";
 
     constructor(poeCookie, botName, waitForAuth) {
         this.botName = botName;
