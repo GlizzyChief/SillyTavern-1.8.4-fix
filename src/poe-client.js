@@ -1,13 +1,31 @@
+// Default paths that usually contain Chromium, or Chrome when using Windows or OSX
+// Feel free to change if you're using a custom path!
 const DEFAULT_WINDOWS_PATH =
     "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
+const ALTERNATIVE_WINDOWS_PATH =
+    "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe";
 const DEFAULT_OSX_PATH =
     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+const DEFAULT_ANDROID_PATH =
+    "/data/data/com.termux/files/usr/bin/chromium-browser";
+const DEFAULT_LINUX_PATH = "/usr/bin/chromium";
+// While the above path works for Ubuntu, Arch, etc, Fedora seems to use a different path
+const ALTERNATIVE_LINUX_PATH = "/usr/bin/chromium-browser";
 const puppeteer = require("puppeteer-core");
 const { PuppeteerExtra } = require("puppeteer-extra");
 const StealthPlugin = require("puppeteer-extra-plugin-stealth");
 const Turndown = require("turndown");
 const randomUseragent = require("random-useragent");
 const fs = require("fs");
+
+const chromium_possible_paths = [
+    DEFAULT_ANDROID_PATH,
+    DEFAULT_WINDOWS_PATH,
+    ALTERNATIVE_WINDOWS_PATH,
+    DEFAULT_OSX_PATH,
+    DEFAULT_LINUX_PATH,
+    ALTERNATIVE_LINUX_PATH,
+];
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -42,7 +60,7 @@ const DELETE_CONFIRM_BUTTON_SELECTOR =
     "div.MessageDeleteConfirmationModal_options__31rdn>button.Button_danger__Xy8Ox";
 const SIDEBAR_ITEM_CLASS = ".SidebarItem_label__Ug6_M"; // Used for triggering bot list
 const INFINITE_SCROLL_CLASS = ".InfiniteScroll_pagingTrigger__cdz9I"; // invisible element at the end of the bot list, loads more when in view
-const BOT_NAME_CONTAINER_CLASS = ".BotHeader_textContainer__kVf_I";
+const BOT_NAME_CONTAINER_CLASS = ".CompactBotListItem_info__mJYLl";
 const GENERIC_MODAL_CLOSE_CLASS = ".Modal_closeButton__GycnR"; // Used when closing modals that popup when changing bot, or fetching bot list
 const OUT_OUF_MESSAGES_CLASS =
     ".ChatMessageSendButton_noFreeMessageTooltip__9IhzY";
@@ -76,42 +94,37 @@ class PoeClient {
 
     async initializeDriver() {
         let isMobile = false;
+        let validPathFound = false;
 
-        // Very poor code, but it's 3 am so I can't be bothered to fix this lmao
-        try {
-            this.browser = await puppeteer.launch({
-                executablePath:
-                    "/data/data/com.termux/files/usr/bin/chromium-browser",
-                headless: "new",
-            });
-            isMobile = true;
-        } catch {
+        for (let chromiumPath of chromium_possible_paths) {
             try {
-                this.browser = await puppeteer.launch({
-                    executablePath: DEFAULT_WINDOWS_PATH,
-                    headless: false,
-                });
-            } catch {
-                try {
+                // Alternative initialization for android
+                if (chromiumPath === DEFAULT_ANDROID_PATH) {
                     this.browser = await puppeteer.launch({
                         executablePath:
-                            "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
+                            "/data/data/com.termux/files/usr/bin/chromium-browser",
+                        headless: "new",
+                    });
+                    isMobile = true;
+                } else {
+                    this.browser = await puppeteer.launch({
+                        executablePath: chromiumPath,
                         headless: false,
                     });
-                } catch {
-                    try {
-                        this.browser = await puppeteer.launch({
-                            executablePath: DEFAULT_OSX_PATH,
-                            headless: false,
-                        });
-                    } catch {
-                        this.browser = await puppeteer.launch({
-                            executablePath: "/usr/bin/chromium",
-                            headless: false,
-                        });
-                    }
                 }
+
+                validPathFound = true;
+                break;
+            } catch (e) {
+                console.error(e);
             }
+        }
+
+        if (!validPathFound) {
+            console.error(
+                "No Chrome/Chromium found in default paths! Please check the paths and provide your own path if necessary"
+            );
+            return false;
         }
 
         this.page = await this.browser.newPage();
@@ -651,7 +664,7 @@ class PoeClient {
             BOT_NAME_CONTAINER_CLASS,
             (containers) => {
                 return containers.map(
-                    (container) => container.childNodes[0].innerHTML
+                    (container) => container.childNodes[0].textContent
                 );
             }
         );

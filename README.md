@@ -54,7 +54,9 @@ For getting it to work any other operating system, please contact me!
 - Integration with FlowGPT's image generating models
 - Functionality to change bots' models and temperature (FlowGPT)
 - Work on author's notes, which crash after a yet uncertain threshold
-- Integration with anakin.ai
+- Integration with vello.ai (minor bugs remain before release)
+- Integration with chat.mistral.ai
+- Code revamp for flowgpt
 
 ## Known issues
 - On Windows, sometimes it's necessary to put the browser into non-headless mode
@@ -62,6 +64,7 @@ For getting it to work any other operating system, please contact me!
 - On mobile, streaming and adding a bot is hit-or-miss, as some messages fail to get sent, causing all kinds of issues. Until a fix is found, I advice sticking to non-streaming on mobile, although it can still work
 - Lately, Poe has been behaiving in a weird manner. Looks like general context windows for some bots have been decreased. Some bots still experience the reduced amount of available tokens
 - FlowGPT randomly banning sessions. Logging out and in again resolves it
+- Issues when using multiple cookies in Poe. Under investigation.
 
 
 ## Recent fixes/features
@@ -113,6 +116,7 @@ For getting it to work any other operating system, please contact me!
 - Fixed logged out detection
 - Added a way for users running it in non-headless mode to authenticate manually. To do it, simply change poeWaitForAuth in config.conf.
 - Fixed authentication not working
+- Code cleanup & bug fixes for Poe integration
 
 ## Contact
 Please drop me a message on [Matrix](https://matrix.to/#/@glizzychief:techsaviours.org) or Discord (glizzychief#1048) if you have any questions or just want to say hi.
