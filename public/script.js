@@ -138,6 +138,24 @@ import {
 } from "./scripts/flowgpt.js";
 
 import {
+    vello_settings,
+    loadVelloSettings,
+    generateVello,
+    is_get_status_vello,
+    setVelloOnlineStatus,
+    appendVelloAnchors,
+} from "./scripts/velloai.js";
+
+import {
+    mistral_settings,
+    loadMistralSettings,
+    generateMistral,
+    is_get_status_mistral,
+    setMistralOnlineStatus,
+    appendMistralAnchors,
+} from "./scripts/mistral.js";
+
+import {
     debounce,
     delay,
     restoreCaretPosition,
@@ -818,6 +836,8 @@ function checkOnlineStatus() {
         setOpenAIOnlineStatus(false);
         setPoeOnlineStatus(false);
         setFlowGPTOnlineStatus(false);
+        setVelloOnlineStatus(false);
+        setMistralOnlineStatus(false);
     } else {
         $("#online_status_indicator2").css("background-color", "green"); //kobold
         $("#online_status_text2").html(online_status);
@@ -913,7 +933,9 @@ async function getStatus() {
             is_get_status_novel != true &&
             is_get_status_openai != true &&
             main_api !== "poe" &&
-            main_api !== "flowgpt"
+            main_api !== "flowgpt" &&
+            main_api !== "vello" &&
+            main_api !== "mistral"
         ) {
             online_status = "no_connection";
         }
@@ -1896,8 +1918,9 @@ function isStreamingEnabled() {
                 kai_settings.streaming_kobold &&
                 kai_settings.can_use_streaming) ||
             (main_api == "novel" && nai_settings.streaming_novel) ||
-            // FlowGPT streaming is not currently implemented, so no checks for it
-            (main_api == "poe" && poe_settings.streaming) ||
+            // FlowGPT and Vello streaming is not currently implemented, so no checks for it
+            (main_api === "poe" && poe_settings.streaming) ||
+            (main_api === "mistral" && mistral_settings.streaming) ||
             (main_api == "textgenerationwebui" &&
                 textgenerationwebui_settings.streaming)) &&
         !isMultigenEnabled()
@@ -2599,6 +2622,29 @@ async function Generate(
             );
         }
 
+        // Same for vello: added here because no clue where else to put it lmao
+        if (main_api === "vello") {
+            allAnchors = appendVelloAnchors(type, allAnchors, jailbreakPrompt);
+            zeroDepthAnchor = appendVelloAnchors(
+                type,
+                zeroDepthAnchor,
+                jailbreakPrompt
+            );
+        }
+
+        if (main_api === "mistral") {
+            allAnchors = appendMistralAnchors(
+                type,
+                allAnchors,
+                jailbreakPrompt
+            );
+            zeroDepthAnchor = appendMistralAnchors(
+                type,
+                zeroDepthAnchor,
+                jailbreakPrompt
+            );
+        }
+
         // hack for regeneration of the first message
         if (chat2.length == 0) {
             chat2.push("");
@@ -2684,7 +2730,9 @@ async function Generate(
             if (
                 (main_api === "openai" ||
                     main_api === "poe" ||
-                    main_api === "flowgpt") &&
+                    main_api === "flowgpt" ||
+                    main_api === "mistral" ||
+                    main_api === "vello") &&
                 !cyclePrompt.endsWith(" ")
             ) {
                 cyclePrompt += " ";
@@ -3043,9 +3091,12 @@ async function Generate(
                 }
 
                 setInContextMessages(openai_messages_count, type);
-            } else if (main_api == "poe") {
-                generate_data = { prompt: finalPromt };
-            } else if (main_api === "flowgpt") {
+            } else if (
+                main_api === "poe" ||
+                main_api === "flowgpt" ||
+                main_api === "vello" ||
+                main_api === "mistral"
+            ) {
                 generate_data = { prompt: finalPromt };
             }
 
@@ -3127,10 +3178,26 @@ async function Generate(
                         .then(onSuccess)
                         .catch(onError);
                 }
-            } else if (main_api == "flowgpt") {
+            } else if (main_api === "flowgpt") {
                 generateFlowGPT(type, finalPromt, abortController.signal)
                     .then(onSuccess)
                     .catch(onError);
+            } else if (main_api === "vello") {
+                generateVello(type, finalPromt, abortController.signal)
+                    .then(onSuccess)
+                    .catch(onError);
+            } else if (main_api === "mistral") {
+                if (isStreamingEnabled() && type !== "quiet") {
+                    streamingProcessor.generator = await generateMistral(
+                        type,
+                        finalPromt,
+                        streamingProcessor.abortController.signal
+                    );
+                } else {
+                    generateMistral(type, finalPromt, abortController.signal)
+                        .then(onSuccess)
+                        .catch(onError);
+                }
             } else if (
                 main_api == "textgenerationwebui" &&
                 isStreamingEnabled() &&
@@ -3581,6 +3648,12 @@ function getMaxContextSize() {
     // Same here, no specific settings for max content, as FlowGPT doesn't
     // provide a way to control it
     if (main_api === "flowgpt") {
+        this_max_context = Number(max_context);
+    }
+    if (main_api === "vello") {
+        this_max_context = Number(max_context);
+    }
+    if (main_api === "mistral") {
         this_max_context = Number(max_context);
     }
     return this_max_context;
@@ -4153,7 +4226,10 @@ function shouldContinueMultigen(getMessage, isImpersonate, isInstruct) {
     const doesNotContainName =
         message_already_generated.indexOf(nameString) === -1 ||
         main_api === "poe" ||
-        main_api === "flowgpt"; // Added  due to issues with Poe streaming & some bots on FlowGPT not including big chunks of the message
+        main_api === "flowgpt" ||
+        main_api === "vello" ||
+        main_api === "mistral"; // Added  due to issues with Poe streaming & some bots on FlowGPT not including big chunks of the message
+
     //if the bot includes user text in its replies
     //if there is no <endoftext> stamp in the response msg
     const isNotEndOfText =
@@ -4185,6 +4261,10 @@ function extractNameFromMessage(getMessage, force_name2, isImpersonate) {
         force_name2 ||
         main_api == "poe" ||
         main_api === "flowgpt" ||
+        main_api === "vello" ||
+        // Will it have any effect? Might experiment in the future
+        // Adding right now just as a PoC
+        main_api === "mistral" ||
         power_user.instruct.enabled
     )
         this_mes_is_name = true;
@@ -4230,8 +4310,9 @@ function extractMessageFromData(data) {
             return data.output;
         case "openai":
         case "poe":
-            return data;
         case "flowgpt":
+        case "vello":
+        case "mistral":
             return data;
         default:
             return "";
@@ -4948,6 +5029,22 @@ function changeMainAPI() {
             maxContextElem: $("#max_context_block"),
             amountGenElem: $("#amount_gen_block"),
         },
+        vello: {
+            apiSettings: $("#vello_settings"),
+            apiConnector: $("#vello_api"),
+            apiPresets: $("#vello_api-presets"),
+            apiRanges: $("#range_block_vello"),
+            maxContextElem: $("#max_context_block"),
+            amountGenElem: $("#amount_gen_block"),
+        },
+        mistral: {
+            apiSettings: $("#mistral_settings"),
+            apiConnector: $("#mistral_api"),
+            apiPresets: $("#mistral_api-presets"),
+            apiRanges: $("#range_block_mistral"),
+            maxContextElem: $("#max_context_block"),
+            amountGenElem: $("#amount_gen_block"),
+        },
     };
     //console.log('--- apiElements--- ');
     //console.log(apiElements);
@@ -4994,7 +5091,12 @@ function changeMainAPI() {
     }
     // Hide amount gen for poe
     // Same for flowgpt, since it doesn't provide a way to control it
-    if (selectedVal === "poe" || selectedVal === "flowgpt") {
+    if (
+        selectedVal === "poe" ||
+        selectedVal === "flowgpt" ||
+        selectedVal === "vello" ||
+        selectedVal === "mistral"
+    ) {
         $("#amount_gen_block").css("display", "none");
     } else {
         $("#amount_gen_block").css("display", "flex");
@@ -5681,6 +5783,12 @@ async function getSettings(type) {
         // FlowGPT
         loadFlowGPTSettings(settings);
 
+        // Vello
+        loadVelloSettings(settings);
+
+        // Mistral
+        loadMistralSettings(settings);
+
         // Load power user settings
         loadPowerUserSettings(settings, data);
 
@@ -5771,6 +5879,8 @@ async function saveSettings(type) {
                 power_user: power_user,
                 poe_settings: poe_settings,
                 flowgpt_settings: flowgpt_settings,
+                vello_settings: vello_settings,
+                mistral_settings: mistral_settings,
                 extension_settings: extension_settings,
                 context_settings: context_settings,
                 tags: tags,
@@ -6057,7 +6167,9 @@ async function getStatusNovel() {
             is_get_status != true &&
             is_get_status_openai != true &&
             is_get_status_poe != true &&
-            is_get_status_flowgpt != true
+            is_get_status_flowgpt != true &&
+            is_get_status_vello != true &&
+            is_get_status_mistral != true
         ) {
             online_status = "no_connection";
         }
@@ -7753,6 +7865,12 @@ function connectAPISlash(_, text) {
         flowgpt: {
             button: "#flowgpt_connect",
         },
+        vello: {
+            button: "#vello_connect",
+        },
+        mistral: {
+            button: "#mistral_connect",
+        },
     };
 
     const apiConfig = apiMap[text];
@@ -7873,7 +7991,7 @@ $(document).ready(function () {
         "api",
         connectAPISlash,
         [],
-        "(kobold, horde, novel, ooba, oai, claude, poe, windowai, flowgpt) – connect to an API",
+        "(kobold, horde, novel, ooba, oai, claude, poe, windowai, flowgpt, vello, mistral) – connect to an API",
         true,
         true
     );
@@ -8805,6 +8923,8 @@ $(document).ready(function () {
         setOpenAIOnlineStatus(false);
         setPoeOnlineStatus(false);
         setFlowGPTOnlineStatus(false);
+        setVelloOnlineStatus(false);
+        setMistralOnlineStatus(false);
         online_status = "no_connection";
         checkOnlineStatus();
         changeMainAPI();

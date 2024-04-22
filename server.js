@@ -314,6 +314,8 @@ app.use(doubleCsrfProtection);
 
 // CORS Settings //
 const cors = require("cors");
+const VelloAIClient = require("./src/velloai-client.js");
+const MistralClient = require("./src/mistral-client.js");
 const CORS = cors({
     origin: "null",
     methods: ["OPTIONS"],
@@ -2912,7 +2914,13 @@ app.post("/deletegroup", jsonParser, async (request, response) => {
 const POE_DEFAULT_BOT = "gptforst";
 
 // An already instantiated client. No need to keep a separate object for this
-let cachedPoeClient = null;
+// Since it's not really advised to have several instances of chromium running at once,
+// all chromium-based clients will use this object.
+// A bit ugly ( but will have to do for now.
+let cachedClient = {
+    site: "",
+    client: null,
+};
 
 let botNames = [];
 
@@ -2920,9 +2928,9 @@ let expiredPoeTokens = [];
 
 const FLOWGPT_DEFAULT_BOT = "ChatGPT";
 
-let cachedFlowGPTClient = null;
-
 let flowGPTBotNames = [];
+
+let velloAIBotNames;
 
 // Instantiates and returns a Poe client with provided p_b cookie.
 // Should only receive the cookie itself, without the whole token.
@@ -2968,24 +2976,24 @@ async function instantiateClient(cookie) {
 // Fetches a client depending on the provided token, splitting it into parts.
 // The code is a bit clunky, will rework once I have more time though.
 async function getPoeClient(token, useCache = false) {
-    // Since both use a headless browser, close the other one before using this
-    if (cachedFlowGPTClient !== null) {
-        await cachedFlowGPTClient.closeDriver();
-        cachedFlowGPTClient = null;
-    }
-    if (useCache && cachedPoeClient !== null) {
+    if (
+        useCache &&
+        cachedClient.client !== null &&
+        cachedClient.site === "poe"
+    ) {
         // Check whether the cached client has any messages left
         // Otherwise, add its p_b to expired cookies and start the general workflow
         // No need to close the client, as it will get closed on its own anyway
         // right after the if block
-        if (await cachedPoeClient.checkRemainingMessages())
-            return cachedPoeClient;
-        expiredPoeTokens.push(cachedPoeClient.poeCookie);
+        if (await cachedClient.client.checkRemainingMessages())
+            return cachedClient.client;
+        expiredPoeTokens.push(cachedClient.client.poeCookie);
     }
 
-    if (cachedPoeClient !== null) {
-        await cachedPoeClient?.closeDriver();
-        cachedPoeClient = null;
+    if (cachedClient.client !== null || cachedClient.site !== "") {
+        await cachedClient.client?.closeDriver();
+        cachedClient.client = null;
+        cachedClient.site = "";
     }
 
     let client = null;
@@ -3009,7 +3017,8 @@ async function getPoeClient(token, useCache = false) {
         );
     }
 
-    cachedPoeClient = client;
+    cachedClient.site = "poe";
+    cachedClient.client = client;
     return client;
 }
 
@@ -3392,18 +3401,18 @@ app.post("/poe_suggest", jsonParser, async function (request, response) {
 });
 
 async function getFlowGPTClient(token, useCache = false) {
-    // Since both use a headless browser, close the other one before using this
-    if (cachedPoeClient !== null) {
-        await cachedPoeClient.closeDriver();
-        cachedPoeClient = null;
-    }
-    if (useCache && cachedFlowGPTClient !== null) {
-        return cachedFlowGPTClient;
+    if (
+        useCache &&
+        cachedClient.client !== null &&
+        cachedClient.site === "flowgpt"
+    ) {
+        return cachedClient.client;
     }
 
-    if (cachedFlowGPTClient !== null) {
-        await cachedFlowGPTClient?.closeDriver();
-        cachedFlowGPTClient = null;
+    if (cachedClient.client !== null && cachedClient.site !== "") {
+        await cachedClient.client?.closeDriver();
+        cachedClient.client = null;
+        cachedClient.site = "";
     }
 
     let client = null;
@@ -3415,12 +3424,12 @@ async function getFlowGPTClient(token, useCache = false) {
         client = null;
     }
 
-    // By this point, if client is still null, then no messages are left, hence throwing an error
     if (client === null) {
         console.error("Error during initializing FlowGPT :(");
     }
 
-    cachedFlowGPTClient = client;
+    cachedClient.client = client;
+    cachedClient.site = "flowgpt";
     return client;
 }
 
@@ -3585,6 +3594,395 @@ app.post("/add_flowgpt_bot", jsonParser, async (request, response) => {
     } catch (err) {
         console.error(err);
         return response.sendStatus(500);
+    }
+});
+
+async function getVelloClient(email, password, useCache = false) {
+    if (
+        useCache &&
+        cachedClient.client !== null &&
+        cachedClient.site === "vello"
+    ) {
+        return cachedClient.client;
+    }
+
+    if (cachedClient.client !== null && cachedClient.site !== "") {
+        await cachedClient.client?.closeDriver();
+        cachedClient.client = null;
+        cachedClient.site = "";
+    }
+
+    let client = null;
+
+    client = new VelloAIClient(email, password, FLOWGPT_DEFAULT_BOT);
+    successfullyInitialized = await client.initializeDriver();
+    if (!successfullyInitialized) {
+        await client?.closeDriver();
+        client = null;
+    }
+
+    if (client === null) {
+        console.error("Error during initializing Vello!");
+    }
+
+    cachedClient.client = client;
+    cachedClient.site = "vello";
+    return client;
+}
+
+app.post("/status_vello", jsonParser, async (request, response) => {
+    const email = readSecret(SECRET_KEYS.VELLO_EMAIL);
+    const password = readSecret(SECRET_KEYS.VELLO_PASSWORD);
+
+    if (!email || !password) {
+        return response.sendStatus(401);
+    }
+
+    try {
+        const client = await getVelloClient(email, password, true);
+        velloAIBotNames = await client.getBotNames();
+        console.log(velloAIBotNames);
+
+        return response.send({ bot_names: velloAIBotNames });
+    } catch (err) {
+        console.error(err);
+
+        return response.sendStatus(401);
+    }
+});
+
+app.post("/generate_vello", jsonParser, async (request, response) => {
+    if (!request.body.prompt) {
+        return response.sendStatus(400);
+    }
+
+    let email = SECRET_KEYS.VELLO_EMAIL;
+    let password = SECRET_KEYS.VELLO_PASSWORD;
+
+    if (!email || !password) {
+        return response.sendStatus(401);
+    }
+
+    const abortController = new AbortController();
+
+    request.socket.removeAllListeners("close");
+    request.socket.on("close", function () {
+        isGenerationStopped = true;
+
+        if (client) {
+            abortController.abort();
+        }
+    });
+
+    const prompt = request.body.prompt;
+    const bot = request.body.bot ?? "Vella";
+
+    let client;
+
+    try {
+        client = await getVelloClient(email, password, true);
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+
+    try {
+        let reply;
+
+        if (bot !== client.botName && velloAIBotNames.includes(bot)) {
+            await client.changeBot(bot);
+        }
+
+        await client.sendMessage(prompt);
+
+        await delay(500);
+
+        console.log("Getting latest message...");
+
+        // let waitingForMessage = true;
+
+        console.log("Waiting for message...");
+
+        let startTime = Date.now();
+        while (true) {
+            await delay(300);
+            let stillGenerating = await client.isGenerating();
+
+            if (!stillGenerating) {
+                break;
+            }
+
+            let milliSecondsElapsed = Math.floor(Date.now() - startTime);
+            if (milliSecondsElapsed > config.velloMessageTimeout) {
+                console.error(
+                    "!!!!!!!!!!!!!!!!!!!ERROR: message timeout. Message is taking longer configured timeout to get generated!!!!!!!!!!!!!!!!!!!"
+                );
+                return response.send(
+                    "Message timeout. Please try regenerating the message or changing message timeout settings."
+                );
+            }
+        }
+
+        reply = await client.getLatestMessage();
+
+        console.log(reply);
+
+        return response.send(reply);
+    } catch {
+        //client.disconnect_ws();
+        return response.sendStatus(500);
+    }
+});
+
+app.post("/purge_vello", jsonParser, async (request, response) => {
+    let email = SECRET_KEYS.VELLO_EMAIL;
+    let password = SECRET_KEYS.VELLO_PASSWORD;
+
+    if (!email || !password) {
+        return response.sendStatus(401);
+    }
+
+    try {
+        client = await getVelloClient(email, password, true);
+
+        await client.newChat();
+
+        return response.send({ ok: true });
+    } catch (err) {
+        console.error(err);
+        return response.sendStatus(500);
+    }
+});
+
+async function getMistralClient(email, password, useCache = false) {
+    if (
+        useCache &&
+        cachedClient.client !== null &&
+        cachedClient.site === "mistral"
+    ) {
+        return cachedClient.client;
+    }
+
+    if (cachedClient.client !== null && cachedClient.site !== "") {
+        await cachedClient.client?.closeDriver();
+        cachedClient.client = null;
+        cachedClient.site = "";
+    }
+
+    let client = null;
+
+    client = new MistralClient(email, password);
+    successfullyInitialized = await client.initializeDriver();
+    if (!successfullyInitialized) {
+        await client?.closeDriver();
+        client = null;
+    }
+
+    if (client === null) {
+        console.error("Error during initializing Mistral!");
+    }
+
+    cachedClient.client = client;
+    cachedClient.site = "mistral";
+    return client;
+}
+
+app.post("/status_mistral", jsonParser, async (request, response) => {
+    const email = readSecret(SECRET_KEYS.MISTRAL_EMAIL);
+    const password = readSecret(SECRET_KEYS.MISTRAL_PASSWORD);
+
+    if (!email || !password) {
+        return response.sendStatus(401);
+    }
+
+    try {
+        const client = await getMistralClient(email, password, true);
+        let mistralBotNames = await client.getBotNames();
+
+        return response.send({ bot_names: mistralBotNames });
+    } catch (err) {
+        console.error(err);
+
+        return response.sendStatus(401);
+    }
+});
+
+app.post("/purge_mistral", jsonParser, async (request, response) => {
+    const email = readSecret(SECRET_KEYS.MISTRAL_EMAIL);
+    const password = readSecret(SECRET_KEYS.MISTRAL_PASSWORD);
+
+    if (!email || !password) {
+        return response.sendStatus(401);
+    }
+
+    const count = request.body.count ?? -1;
+
+    console.log(`!!!!!!!!!!!! NEED TO PURGE ${count} MESSAGES (Mistral)!`);
+
+    try {
+        const client = await getMistralClient(email, password, true);
+
+        if (count > 0) {
+            await client.deleteMessages(count);
+        } else if (count === -1) {
+            await client.newChat();
+        }
+        //client.disconnect_ws();
+
+        return response.send({ ok: true });
+    } catch (err) {
+        console.error(err);
+        return response.sendStatus(500);
+    }
+});
+
+app.post("/generate_mistral", jsonParser, async (request, response) => {
+    if (!request.body.prompt) {
+        return response.sendStatus(400);
+    }
+
+    const email = readSecret(SECRET_KEYS.MISTRAL_EMAIL);
+    const password = readSecret(SECRET_KEYS.MISTRAL_PASSWORD);
+
+    if (!email || !password) {
+        return response.sendStatus(401);
+    }
+
+    let isGenerationStopped = false;
+    const abortController = new AbortController();
+
+    request.socket.removeAllListeners("close");
+    request.socket.on("close", function () {
+        isGenerationStopped = true;
+
+        if (client) {
+            abortController.abort();
+        }
+    });
+
+    const prompt = request.body.prompt;
+    const bot = request.body.bot ?? "Large";
+
+    const streaming = request.body.streaming ?? false;
+
+    let client;
+
+    try {
+        client = await getMistralClient(email, password, true);
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+
+    if (streaming) {
+        await delay(300);
+        try {
+            await client.changeBot(bot);
+
+            let oldReply = await client.getLatestMessage();
+
+            await client.sendMessage(prompt);
+
+            // necessary due to double jb issues
+            await delay(80);
+
+            let reply = "";
+            while (!isGenerationStopped) {
+                if (response.headersSent === false) {
+                    response.writeHead(200, {
+                        "Content-Type": "text/plain;charset=utf-8",
+                        "Transfer-Encoding": "chunked",
+                        "Cache-Control": "no-transform",
+                        //"X-Message-Id": String(mes.messageId),
+                    });
+                }
+                await delay(150);
+
+                if (isGenerationStopped) {
+                    console.error(
+                        "Streaming stopped by user. Aborting the message and resetting to jailbroken state..."
+                    );
+                    await client.abortMessage();
+                    await client.deleteMessages(2);
+                    break;
+                }
+
+                let newReply = await client.getLatestMessageStreaming();
+
+                // Just a failsafe due to bot's cut-off name being registered as actual text.
+                if (
+                    newReply === "..." ||
+                    newReply.length < 20 ||
+                    newReply === oldReply
+                ) {
+                    await delay(100);
+                    continue;
+                }
+
+                let newText = newReply.substring(reply.length);
+
+                reply = newReply;
+                response.write(newText);
+                isGenerationStopped = !(await client.isGenerating(true));
+            }
+            console.log(reply);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            //client.disconnect_ws();
+            response.end();
+        }
+    } else {
+        try {
+            let reply;
+
+            /*for await (const mes of client.send_message(bot, prompt, false, 60, abortController.signal)) {
+                reply = mes.text;
+                messageId = mes.messageId;
+            }*/
+
+            await client.changeBot(bot);
+
+            await client.sendMessage(prompt);
+
+            let waitingForMessage = true;
+
+            console.log("Waiting for message...");
+
+            let startTime = Date.now();
+            while (waitingForMessage) {
+                await delay(200);
+                let stillGenerating = await client.isGenerating();
+                // console.log(`Still generating is: ${stillGenerating}`);
+                // console.log(`Waiting for message is: ${waitingForMessage}`);
+                if (!stillGenerating) {
+                    waitingForMessage = false;
+                }
+                let milliSecondsElapsed = Math.floor(Date.now() - startTime);
+                if (milliSecondsElapsed > config.mistralMessageTimeout) {
+                    // Currently only informative, should get properly handled in the future
+
+                    console.error(
+                        "!!!!!!!!!!!!!!!!!!!ERROR: message timeout. Message is taking longer configured timeout to get generated!!!!!!!!!!!!!!!!!!!"
+                    );
+                    return response.send(
+                        "Message timeout. Please try regenerating the message or changing message timeout settings."
+                    );
+                }
+            }
+
+            reply = await client.getLatestMessage();
+
+            console.log(reply);
+
+            await delay(200);
+
+            // Temporary fix due to issues during parsing json on client side
+            return response.send(reply);
+        } catch {
+            //client.disconnect_ws();
+            return response.sendStatus(500);
+        }
     }
 });
 
@@ -4507,6 +4905,10 @@ const SECRET_KEYS = {
     POE: "api_key_poe",
     NOVEL: "api_key_novel",
     FLOWGPT: "api_key_flowgpt",
+    VELLO_EMAIL: "api_vello_email",
+    VELLO_PASSWORD: "api_vello_password",
+    MISTRAL_EMAIL: "api_mistral_email",
+    MISTRAL_PASSWORD: "api_mistral_password",
     CLAUDE: "api_key_claude",
     DEEPL: "deepl",
     OPENROUTER: "api_key_openrouter",

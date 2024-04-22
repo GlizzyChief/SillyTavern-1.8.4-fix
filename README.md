@@ -1,19 +1,19 @@
 # SillyTavern-1.8.4-fix
 
-This is a patched version of SillyTavern 1.8.4 which adds support for Poe and FlowGPT using Puppeteer.
+This is a patched version of SillyTavern 1.8.4 which adds support for Poe, FlowGPT, VelloAI and Mistral using Puppeteer.
 It can be used the same way as SillyTavern 1.8.4. Just input your p-b cookie (and p-lat cookie optionally), the path to chromium on your device and have a blast!
 
 If you want to use it with the latest version of SillyTavern, please check out [The amazing work done by LegendPoet](https://github.com/LegendPoet/SillyTavern-fix)
 
-# Instructions
-
-IMPORTANT!!!
+## IMPORTANT!!!
 Poe has introduced a new cookie 'p-lat' the lack of which often breaks authentication. If you're having issues with connecting, please try adding both p-b and p-lat cookie in the format: p-b|p-lat and connecting. It's important to separate them only with a single | character.
 
 Before moving further, please disable "Try to open links in app" in Poe settings (poe.com/settings). Alternatively, just conect 2 times in a row. This must be done only once for each account.
 
 If you want to use multiple cookies for bypassing 100 message limit, please write them separated by a comma in connection settings, i.e. where you'd input your cookie usually.
 
+
+# Instructions
 
 ## Android
 
@@ -46,7 +46,7 @@ To get the path, right click on your chrome shortcut. Then, press "Open file loc
 It should work by default on OSX, but please reach out if you're having issues with that!
 
 ## Other OSes
-For getting it to work any other operating system, please contact me!
+For getting it to work on any other operating system, please contact me!
 
 ## In development
 - Integration with paid Poe API
@@ -54,9 +54,8 @@ For getting it to work any other operating system, please contact me!
 - Integration with FlowGPT's image generating models
 - Functionality to change bots' models and temperature (FlowGPT)
 - Work on author's notes, which crash after a yet uncertain threshold
-- Integration with vello.ai (minor bugs remain before release)
-- Integration with chat.mistral.ai
 - Code revamp for flowgpt
+- Fixing up the docker image & making it work with Puppeteer-based clients
 
 ## Known issues
 - On Windows, sometimes it's necessary to put the browser into non-headless mode
@@ -65,6 +64,7 @@ For getting it to work any other operating system, please contact me!
 - Lately, Poe has been behaiving in a weird manner. Looks like general context windows for some bots have been decreased. Some bots still experience the reduced amount of available tokens
 - FlowGPT randomly banning sessions. Logging out and in again resolves it
 - Issues when using multiple cookies in Poe. Under investigation.
+- VelloAI client is still not tested fully due to its paid nature. Please report any issues or bugs!
 
 
 ## Recent fixes/features
@@ -117,6 +117,9 @@ For getting it to work any other operating system, please contact me!
 - Added a way for users running it in non-headless mode to authenticate manually. To do it, simply change poeWaitForAuth in config.conf.
 - Fixed authentication not working
 - Code cleanup & bug fixes for Poe integration
+- Added VelloAI
+- Added Mistral
+- Cleaned up & simplified some of server-side logic for client initialization
 
 ## Contact
 Please drop me a message on [Matrix](https://matrix.to/#/@glizzychief:techsaviours.org) or Discord (glizzychief#1048) if you have any questions or just want to say hi.
