@@ -36,8 +36,8 @@ let stealthPlugin = StealthPlugin();
 puppeteerWithPlugin.use(stealthPlugin);
 
 // CSS classes for quick fixing
-const OPEN_IN_APP_TOGGLER_CLASS = ".ToggleSwitch_slider__ih5sC";
-const LANGUAGE_SELECT_CLASS = ".Select_select__9vzGo";
+const OPEN_IN_APP_TOGGLER_CLASS = ".switch_input__8I5Oq";
+const LANGUAGE_SELECT_CLASS = ".dropdown_select__fee24";
 const MODAL_CLOSE_CLASS = ".Modal_closeButton__ZYPm5";
 const LOGGED_OUT_CLASS = ".TalkToBotButton_container__UJWM4";
 const CHAT_GROW_CLASS = ".ChatPageMain_flexGrow__UnM8q"; // Element that loads the rest of the chat when scrolling down
@@ -193,15 +193,16 @@ class PoeClient {
 
         try {
             await this.page.evaluate((classname) => {
-                let label = document.querySelector(classname);
-                if (label.parentElement.childNodes[0].checked) {
-                    label.click();
+                let toggle = document.querySelector(classname);
+                if (toggle.checked) {
+                    toggle.click();
                 }
             }, OPEN_IN_APP_TOGGLER_CLASS);
-        } catch {
+        } catch (e) {
             console.log(
                 "WARNING: Couldn't disable 'Open in App' automatically, please disable it manually by going into poe.com/settings"
             );
+            console.error(e);
         }
 
         // Attempting to force language to be english while still at /settings
@@ -218,7 +219,7 @@ class PoeClient {
             console.log(
                 "WARNING: Couldn't change language! Please send the next line to the developer via discord. Integration may fail to work!"
             );
-            console.log(JSON.stringify(e));
+            console.log(e);
         }
 
         await delay(200);
