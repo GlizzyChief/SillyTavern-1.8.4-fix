@@ -23,6 +23,7 @@ export {
     setVelloOnlineStatus,
 };
 
+const MAX_RETRIES_FOR_ACTIVATION = 5;
 const VELLO_TOKEN_LENGTH = 4096;
 const DEFAULT_JAILBREAK_RESPONSE = "Understood.";
 
@@ -155,7 +156,7 @@ async function autoJailbreak() {
         if (
             reply
                 .toLowerCase()
-                .includes(poe_settings.jailbreak_response.toLowerCase())
+                .includes(vello_settings.jailbreak_response.toLowerCase())
         ) {
             jailbroken = true;
             break;
@@ -199,7 +200,7 @@ async function generateVello(type, finalPrompt, signal) {
     reply = await sendMessage(finalPrompt, signal);
     //}
 
-    jailbroken = false;
+    await purgeConversation();
     return reply;
 }
 
@@ -207,10 +208,6 @@ async function generateVello(type, finalPrompt, signal) {
 // can only fully purge the chat by starting
 // a new chat altogether
 async function purgeConversation() {
-    if (count == 0) {
-        return true;
-    }
-
     const response = await fetch("/purge_vello", {
         headers: getRequestHeaders(),
         method: "POST",
@@ -305,7 +302,7 @@ async function checkStatusVello() {
 
         for (const [value, name] of Object.entries(data.bot_names)) {
             const option = document.createElement("option");
-            option.value = value;
+            option.value = name;
             option.innerText = name;
             $("#vello_bots").append(option);
         }

@@ -56,6 +56,8 @@ For getting it to work on any other operating system, please contact me!
 - Work on author's notes, which crash after a yet uncertain threshold
 - Code revamp for flowgpt
 - Fixing up the docker image & making it work with Puppeteer-based clients
+- Integration with new FlowGPT site (last bugfixes remain before release)
+- Google authentication for VelloAI
 
 ## Known issues
 - On Windows, sometimes it's necessary to put the browser into non-headless mode
@@ -120,6 +122,7 @@ For getting it to work on any other operating system, please contact me!
 - Added VelloAI
 - Added Mistral
 - Cleaned up & simplified some of server-side logic for client initialization
+- VelloAI bugfixes
 
 ## Contact
 Please drop me a message on [Matrix](https://matrix.to/#/@glizzychief:techsaviours.org) or Discord (glizzychief#1048) if you have any questions or just want to say hi.

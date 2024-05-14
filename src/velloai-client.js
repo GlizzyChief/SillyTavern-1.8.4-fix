@@ -53,10 +53,9 @@ const VELLO_OUT_OF_MESSAGES_TEXT = "div.select-none>svg";
 const VELLO_MESSAGE_CONTAINER = "article.prose";
 const VELLO_STOP_BUTTON = "svg.text-rose-400";
 const VELLO_NEW_CHAT_BUTTON = ".cursor-pointer.text-center";
-// There are actually 3 buttons with this class, could possibly overlap
-// with other buttons if more appear
+const VELLO_EXPAND_USER_SETTINGS_BUTTON = "button>button";
 const VELLO_SETTINGS_OPEN_BUTTON =
-    "button.cursor-pointer.text-center.text-slate-300";
+    "div.relative.flex.cursor-default.select-none.items-center.rounded-sm.px-2.text-sm";
 const VELLO_SETTINGS_CLOSE_BUTTON = "button.absolute";
 const VELLO_BOT_PIN_SWITCH = "td>button[role=switch]";
 const VELLO_CHATS_CONTAINER = "div[role=group]";
@@ -71,6 +70,7 @@ class VelloAIClient {
     page = null;
     email = null;
     password = null;
+    botName = null;
 
     constructor(email, password) {
         this.email = email;
@@ -224,11 +224,28 @@ class VelloAIClient {
             return false;
         }
 
+        await this.page.waitForSelector(VELLO_EXPAND_USER_SETTINGS_BUTTON);
+
+        // In order to load the element needed for opening settings, we must expand
+        // User settings first. If it's already expanded and available, then no need to
+        await this.page.evaluate(
+            (expandButtonSelector, openSettingsButtonSelector) => {
+                if (
+                    document.querySelectorAll(openSettingsButtonSelector)
+                        .length === 0
+                ) {
+                    document.querySelector(expandButtonSelector).click();
+                }
+            },
+            VELLO_EXPAND_USER_SETTINGS_BUTTON,
+            VELLO_SETTINGS_OPEN_BUTTON
+        );
+
         // Pin all bots, since pinned bots seem to get reset after every launch
         // Necessary to get ALL bot names
         await this.page.waitForSelector(VELLO_SETTINGS_OPEN_BUTTON);
         await this.page.evaluate((buttonSelector) => {
-            document.querySelectorAll(buttonSelector)[2].click();
+            document.querySelectorAll(buttonSelector)[3].click();
         }, VELLO_SETTINGS_OPEN_BUTTON);
 
         // Wait for the animation to end
@@ -274,15 +291,17 @@ class VelloAIClient {
     // here for now, both creating a new chat and choosing the bot
     async sendMessage(message) {
         try {
-            // Commented out to try and implemment proper JB logic aanyway
-
-            // // Will always create a new chat and select a default bot
-            // // if selected bot doesn't even exist
-            // await this.changeBot(botName);
-
             let messageInputField = await this.page.$(
                 VELLO_MESSAGE_INPUT_FIELD
             );
+
+            await delay(100);
+
+            await messageInputField.focus();
+
+            await messageInputField.type(" ");
+            await messageInputField.press("Backspace");
+            await delay(100);
 
             await this.page.evaluate(
                 (selector, message) => {
@@ -297,13 +316,13 @@ class VelloAIClient {
             await messageInputField.press("Backspace");
             await delay(100);
 
-            // await messageInputField.press("Enter");
+            await messageInputField.press("Enter");
 
-            // // Wait for the message to start getting generated
-            // while (true) {
-            //     if (await this.isGenerating()) break;
-            //     await delay(10);
-            // }
+            // Wait for the message to start getting generated
+            while (true) {
+                if (await this.isGenerating()) break;
+                await delay(10);
+            }
 
             return true;
         } catch (e) {
@@ -367,9 +386,9 @@ class VelloAIClient {
 
             await messageInputField.type(" ");
             await messageInputField.press("Backspace");
-            await delay(100);
+            await delay(5000);
 
-            //await messageInputField.press("Enter");
+            await messageInputField.press("Enter");
 
             // Wait for the message to start getting generated
             while (true) {
@@ -400,7 +419,7 @@ class VelloAIClient {
 
     async isGenerating() {
         return await this.page.evaluate((buttonSelector) => {
-            return !document.querySelector(buttonSelector);
+            return !!document.querySelector(buttonSelector);
         }, VELLO_STOP_BUTTON);
     }
 
@@ -480,6 +499,8 @@ class VelloAIClient {
         }
 
         await botNameHandles[botNameID].click();
+
+        this.botName = botName;
 
         return true;
     }

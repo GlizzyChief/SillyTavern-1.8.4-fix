@@ -3689,15 +3689,22 @@ app.post("/generate_vello", jsonParser, async (request, response) => {
     try {
         let reply;
 
-        if (bot !== client.botName && velloAIBotNames.includes(bot)) {
+        console.log(velloAIBotNames);
+        console.log(bot);
+
+        // Changing the bot, even to the same one, triggers a new chat,
+        // breaking the JB. In future, changing the bot will be
+        // independent of chat condition
+        if (velloAIBotNames.includes(bot) && client.botName !== bot) {
+            console.log(`Vello: changing bot to ${bot}`);
             await client.changeBot(bot);
         }
+
+        console.log("Sending message...");
 
         await client.sendMessage(prompt);
 
         await delay(500);
-
-        console.log("Getting latest message...");
 
         // let waitingForMessage = true;
 
@@ -3723,6 +3730,10 @@ app.post("/generate_vello", jsonParser, async (request, response) => {
             }
         }
 
+        console.log("Stopped waiting for the message!");
+
+        await delay(500);
+
         reply = await client.getLatestMessage();
 
         console.log(reply);
@@ -3741,6 +3752,10 @@ app.post("/purge_vello", jsonParser, async (request, response) => {
     if (!email || !password) {
         return response.sendStatus(401);
     }
+
+    let client;
+
+    console.log("Vello: starting new chat...");
 
     try {
         client = await getVelloClient(email, password, true);
