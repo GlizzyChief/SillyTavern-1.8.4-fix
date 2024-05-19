@@ -3597,7 +3597,12 @@ app.post("/add_flowgpt_bot", jsonParser, async (request, response) => {
     }
 });
 
-async function getVelloClient(email, password, useCache = false) {
+async function getVelloClient(
+    email,
+    password,
+    useGoogleAuth,
+    useCache = false
+) {
     if (
         useCache &&
         cachedClient.client !== null &&
@@ -3614,7 +3619,7 @@ async function getVelloClient(email, password, useCache = false) {
 
     let client = null;
 
-    client = new VelloAIClient(email, password, FLOWGPT_DEFAULT_BOT);
+    client = new VelloAIClient(email, password, useGoogleAuth);
     successfullyInitialized = await client.initializeDriver();
     if (!successfullyInitialized) {
         await client?.closeDriver();
@@ -3634,12 +3639,19 @@ app.post("/status_vello", jsonParser, async (request, response) => {
     const email = readSecret(SECRET_KEYS.VELLO_EMAIL);
     const password = readSecret(SECRET_KEYS.VELLO_PASSWORD);
 
-    if (!email || !password) {
+    const useGoogleAuth = request.body.use_google_auth;
+
+    if ((!email || !password) && !useGoogleAuth) {
         return response.sendStatus(401);
     }
 
     try {
-        const client = await getVelloClient(email, password, true);
+        const client = await getVelloClient(
+            email,
+            password,
+            useGoogleAuth,
+            true
+        );
         velloAIBotNames = await client.getBotNames();
         console.log(velloAIBotNames);
 

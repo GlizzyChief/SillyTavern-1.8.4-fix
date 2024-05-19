@@ -34,11 +34,11 @@ const chromium_possible_paths = [
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const puppeteerWithPlugin = new PuppeteerExtra(puppeteer);
+// const puppeteerWithPlugin = new PuppeteerExtra(puppeteer);
 
-let stealthPlugin = StealthPlugin();
+// let stealthPlugin = StealthPlugin();
 
-puppeteerWithPlugin.use(stealthPlugin);
+// puppeteerWithPlugin.use(stealthPlugin);
 
 // Selectors used in the logic
 const VELLO_SIGN_UP_MODAL_TRIGGER = "button.w-full";
@@ -71,10 +71,12 @@ class VelloAIClient {
     email = null;
     password = null;
     botName = null;
+    useGoogleAuth = false;
 
-    constructor(email, password) {
+    constructor(email, password, useGoogleAuth) {
         this.email = email;
         this.password = password;
+        this.useGoogleAuth = useGoogleAuth;
     }
 
     async closeDriver() {
@@ -169,37 +171,65 @@ class VelloAIClient {
             document.querySelector(buttonSelector).click();
         }, VELLO_SIGN_IN_SWITCHER);
 
-        console.log("Authenticating...");
+        if (this.useGoogleAuth) {
+            console.log(
+                "Using Google authentication, waiting for the site to leave vello.ai..."
+            );
 
-        await delay(1000);
+            // First, wait for the site to leave vello.ai (will redirect to Google for authenticating)
+            // This has the added benefit of not having to account for all weird google redirects and such
+            await this.page.waitForFunction(
+                () => window.location.hostname !== "vello.ai",
+                { timeout: 0 }
+            );
 
-        // Typing right away doesn't work, as it eats the first two characters for some reason
-        let emailInputField = await this.page.$(VELLO_EMAIL_INPUT);
-        let passwordInputField = await this.page.$(VELLO_PASSWORD_INPUT);
+            console.log("Site changed! Waiting to return back to vello.ai...");
 
-        await emailInputField.press("Space");
-        await delay(200);
-        await emailInputField.press("Backspace");
-        await emailInputField.type(this.email);
+            // Now, wait for it to return to Vello, meaning successful authentication
+            await this.page.waitForFunction(
+                () => window.location.hostname === "vello.ai",
+                { timeout: 0 }
+            );
 
-        await passwordInputField.press("Space");
-        await delay(200);
-        await passwordInputField.press("Backspace");
-        await passwordInputField.type(this.password);
+            console.log(
+                "Returned to vello.ai. Proceeding with the rest of initialization."
+            );
+        } else {
+            console.log("Authenticating...");
 
-        await this.page.evaluate((buttonSelector) => {
-            document.querySelectorAll(buttonSelector)[1].click();
-        }, VELLO_SIGN_IN_SUBMIT);
+            await delay(1000);
 
-        await delay(2000);
+            // Typing right away doesn't work, as it eats the first two characters for some reason
+            let emailInputField = await this.page.$(VELLO_EMAIL_INPUT);
+            let passwordInputField = await this.page.$(VELLO_PASSWORD_INPUT);
 
-        let didAuthenticationFail = await this.page.evaluate((textSelector) => {
-            return document.querySelectorAll(textSelector).length === 0;
-        }, VELLO_WRONG_CREDENTIALS_ERROR_TEXT);
+            await emailInputField.press("Space");
+            await delay(200);
+            await emailInputField.press("Backspace");
+            await emailInputField.type(this.email);
 
-        if (!didAuthenticationFail) {
-            console.error("Provided credentials did not work!");
-            return false;
+            await passwordInputField.press("Space");
+            await delay(200);
+            await passwordInputField.press("Backspace");
+            await passwordInputField.type(this.password);
+
+            await this.page.evaluate((buttonSelector) => {
+                document.querySelectorAll(buttonSelector)[1].click();
+            }, VELLO_SIGN_IN_SUBMIT);
+
+            await delay(2000);
+
+            let didAuthenticationFail = await this.page.evaluate(
+                (textSelector) => {
+                    return document.querySelectorAll(textSelector).length === 0;
+                },
+                VELLO_WRONG_CREDENTIALS_ERROR_TEXT
+            );
+
+            if (!didAuthenticationFail) {
+                console.error("Provided credentials did not work!");
+                return false;
+            }
         }
 
         // After authenticating, it's necessary to wait for the modal to close so the site becomes fully functional again
@@ -317,6 +347,10 @@ class VelloAIClient {
             await delay(100);
 
             await messageInputField.press("Enter");
+
+            console.log(
+                `Input field value currently: ${messageInputField.value}`
+            );
 
             // Wait for the message to start getting generated
             while (true) {

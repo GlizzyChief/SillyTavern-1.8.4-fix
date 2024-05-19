@@ -56,6 +56,7 @@ const vello_settings = {
     impersonation_prompt: DEFAULT_IMPERSONATION_PROMPT,
     character_nudge: true,
     vello_token_length: VELLO_TOKEN_LENGTH,
+    use_google_auth: false,
 };
 
 let is_get_status_vello = false;
@@ -75,6 +76,7 @@ function loadVelloSettings(settings) {
     $("#vello_character_nudge").prop("checked", vello_settings.character_nudge);
     $("#vello_impersonation_prompt").val(vello_settings.impersonation_prompt);
     $("#vello_token_length").val(vello_settings.vello_token_length);
+    $("#vello_use_google_auth").prop("checked", vello_settings.use_google_auth);
     selectBot();
 }
 
@@ -200,7 +202,10 @@ async function generateVello(type, finalPrompt, signal) {
     reply = await sendMessage(finalPrompt, signal);
     //}
 
-    await purgeConversation();
+    // purge the conversation in an async way,
+    // since testing showed that waiting for it to
+    // finish purging can take too long!
+    purgeConversation();
     return reply;
 }
 
@@ -289,7 +294,8 @@ function setButtonState(value) {
 }
 
 async function checkStatusVello() {
-    const body = JSON.stringify();
+    const use_google_auth = vello_settings.use_google_auth;
+    const body = JSON.stringify({ use_google_auth });
     const response = await fetch("/status_vello", {
         headers: getRequestHeaders(),
         body: body,
@@ -342,6 +348,11 @@ function onCharacterNudgeInput() {
     saveSettingsDebounced();
 }
 
+function onUseGoogleAuthInput() {
+    vello_settings.use_google_auth = !!$(this).prop("checked");
+    saveSettingsDebounced();
+}
+
 function onCharacterNudgeMessageInput() {
     vello_settings.character_nudge_message = $(this).val();
     saveSettingsDebounced();
@@ -389,7 +400,6 @@ $("document").ready(function () {
     $("#vello_activation_message").on("input", onMessageInput);
     $("#vello_character_nudge").on("input", onCharacterNudgeInput);
     $("#vello_nudge_text").on("input", onCharacterNudgeMessageInput);
-
     $("#vello_impersonation_prompt").on("input", onImpersonationPromptInput);
     $("#vello_impersonation_prompt_restore").on(
         "click",
@@ -406,6 +416,7 @@ $("document").ready(function () {
         "click",
         onVelloTokenLengthInputRestoreClick
     );
+    $("#vello_use_google_auth").on("input", onUseGoogleAuthInput);
     $("#vello_purge_chat").on("click", onPurgeChatClick);
     $("#vello_send_jailbreak").on("click", onSendJailbreakClick);
 });
