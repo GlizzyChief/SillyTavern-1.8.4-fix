@@ -777,6 +777,18 @@
                                         Regenerates the message after editing it on FlowGPT.
                                     </div>
                                 </div>
+                                <div class="range-block">
+                                    <div class="range-block-title">
+                                        <h4>Temperature</h4>
+                                    </div>
+                                    <div class="widthFreeExpand">
+                                        <select id="flowgpt_temperatures">
+                                            <option value="1">High</option>
+                                            <option value="2">Medium</option>
+                                            <option value="3">Low</option>
+                                        </select>
+                                    </div>
+                                </div>
                             </div>
                             <div id="range_block_vello">
                                 <h4>Safe Context Size values for Vello bots:</h4>
@@ -2116,8 +2128,19 @@
                             </div>
                         </div>
 
+                        <div class="range-block">
+                            <div class="range-block-title">
+                                <h4>Model</h4>
+                            </div>
+                            <div class="widthFreeExpand">
+                                <select id="flowgpt_models">
+                                    <option data-i18n="Connect to the API">-- Connect to the API --</option>
+                                </select>
+                            </div>
+                        </div>
+
                         <div class="widthFreeExpand">
-                            <h4>Add another bot (part in url after /p/)</h4>
+                            <h4>Add another bot (part in url after /chat/ or /p/)</h4>
                             <div class="flex-container">
                                 <input id="flowgpt_add_bot_name" class="text_pole flex1" type="text" maxlength="100" autocomplete="off" />
                             </div>

@@ -51,7 +51,9 @@ const DEFAULT_IMPERSONATION_PROMPT =
     "[Write a reply only from the point of view of {{user}}, using the chat history so far as a guideline for the writing style of {{user}}. Don't write as {{char}} or system.]";
 
 const flowgpt_settings = {
-    bot: "ChatGPT",
+    bot: "chat-with-chatgpt-for-free-flowgpt",
+    model: "Ares Model",
+    temperature: "2", // Medium
     jailbreak_response: DEFAULT_JAILBREAK_RESPONSE,
     jailbreak_message: DEFAULT_JAILBREAK_MESSAGE,
     character_nudge_message: DEFAULT_CHARACTER_NUDGE_MESSAGE,
@@ -95,6 +97,8 @@ function loadFlowGPTSettings(settings) {
         flowgpt_settings.regenerate_after_editing
     );
     selectBot();
+    selectModel();
+    selectTemperature();
 }
 
 function selectBot() {
@@ -105,11 +109,37 @@ function selectBot() {
     }
 }
 
+function selectModel() {
+    if (flowgpt_settings.model) {
+        $("#flowgpt_models")
+            .find(`option[value="${flowgpt_settings.model}"]`)
+            .attr("selected", true);
+    }
+}
+
+function selectTemperature() {
+    if (flowgpt_settings.model) {
+        $("#flowgpt_temperatures")
+            .find(`option[value="${flowgpt_settings.temperature}"]`)
+            .attr("selected", true);
+    }
+}
+
 function onBotChange() {
     flowgpt_settings.bot = $("#flowgpt_bots").find(":selected").val();
     saveSettingsDebounced();
     auto_jailbroken = false;
     messages_to_purge = 0;
+}
+
+function onModelChange() {
+    flowgpt_settings.model = $("#flowgpt_models").find(":selected").val();
+    saveSettingsDebounced();
+}
+
+function onTemperatureChange() {
+    flowgpt_settings.bot = $("#flowgpt_temperatures").find(":selected").val();
+    saveSettingsDebounced();
 }
 
 function appendFlowGPTAnchors(type, prompt, jailbreakPrompt) {
@@ -256,8 +286,10 @@ async function sendMessage(prompt, signal) {
     const body = JSON.stringify({
         bot: flowgpt_settings.bot,
         prompt,
+        model: flowgpt_settings.model,
+        temperature: flowgpt_settings.temperature,
         editLastMessage: editLastMessage,
-        regenerateAfterEditing: true, //flowgpt_settings.regenerate_after_editing,
+        regenerateAfterEditing: flowgpt_settings.regenerate_after_editing,
     });
 
     const response = await fetch("/generate_flowgpt", {
@@ -336,10 +368,10 @@ async function onBotAddClick() {
 
     $("#flowgpt_bots").empty();
 
-    for (const [value, name] of Object.entries(data.botNames)) {
+    for (const bot of data.bot_names) {
         const option = document.createElement("option");
-        option.value = value;
-        option.innerText = name;
+        option.value = bot.value;
+        option.innerText = bot.name;
         $("#flowgpt_bots").append(option);
     }
 
@@ -365,17 +397,31 @@ async function checkStatusFlowGPT() {
 
     if (response.ok) {
         const data = await response.json();
+
+        // Fill in bots
         $("#flowgpt_bots").empty();
 
-        for (const [value, name] of Object.entries(data.bot_names)) {
+        for (const bot of data.bot_names) {
             const option = document.createElement("option");
-            // Add by name, as opposed to by value, due to bots' order shifting after each refresh
-            option.value = name;
-            option.innerText = name;
+
+            option.value = bot.value;
+            option.innerText = bot.name;
             $("#flowgpt_bots").append(option);
         }
 
+        // Fill in models
+        $("#flowgpt_models").empty();
+
+        for (const model of data.model_names) {
+            const option = document.createElement("option");
+
+            option.value = model;
+            option.innerText = model;
+            $("#flowgpt_models").append(option);
+        }
+
         selectBot();
+        selectModel();
         setOnlineStatus("Connected!");
     } else {
         if (response.status == 401) {
@@ -459,6 +505,8 @@ function onRegenerateAfterEditingInput() {
 
 $("document").ready(function () {
     $("#flowgpt_bots").on("change", onBotChange);
+    $("#flowgpt_models").on("change", onModelChange);
+    $("#flowgpt_temperatures").on("change", onTemperatureChange);
     $("#flowgpt_connect").on("click", onConnectClick);
     $("#flowgpt_activation_response").on("input", onResponseInput);
     $("#flowgpt_activation_message").on("input", onMessageInput);

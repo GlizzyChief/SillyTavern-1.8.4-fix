@@ -52,11 +52,8 @@ For getting it to work on any other operating system, please contact me!
 - Integration with paid Poe API
 - Integration with prompt manager (for newer version)
 - Work on author's notes, which crash after a yet uncertain threshold
-- Code revamp for flowgpt
 - Fixing up the docker image & making it work with Puppeteer-based clients
-- Integration with new FlowGPT site (last bugfixes remain before release)
 - Integration with FlowGPT's image generating models
-- Functionality to change bots' models and temperature (FlowGPT)
 
 ## Known issues
 - On Windows, sometimes it's necessary to put the browser into non-headless mode
@@ -66,6 +63,7 @@ For getting it to work on any other operating system, please contact me!
 - FlowGPT randomly banning sessions. Logging out and in again resolves it.
 - Issues when using multiple cookies in Poe. Under investigation.
 - VelloAI client is still not tested fully due to its paid nature. Please report any issues or bugs!
+- New FlowGPT client has some bugs, often caused by the site itself (e.g. chat not getting cleared and so on). Please report any errors you encounter!
 
 
 ## Recent fixes/features
@@ -123,6 +121,8 @@ For getting it to work on any other operating system, please contact me!
 - Cleaned up & simplified some of server-side logic for client initialization
 - VelloAI bugfixes
 - Added Google Auth for VelloAI (under testing) and some more bugfixes
+- Completely revamped FlowGPT code as it moved to a new domain
+- Added temperature and model selection to FlowGPT
 
 ## Contact
 Please drop me a message on [Matrix](https://matrix.to/#/@glizzychief:techsaviours.org) or Discord (glizzychief#1048) if you have any questions or just want to say hi.

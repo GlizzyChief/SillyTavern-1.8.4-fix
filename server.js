@@ -110,7 +110,7 @@ client.on("error", (err) => {
 });
 
 const PoeClient = require("./src/poe-client");
-const FlowGPTClient = require("./src/flowgpt-client");
+const FlowGPTClient = require("./src/flowgptapp-client");
 
 let api_server = "http://0.0.0.0:5000";
 let api_novelai = "https://api.novelai.net";
@@ -2926,9 +2926,8 @@ let botNames = [];
 
 let expiredPoeTokens = [];
 
-const FLOWGPT_DEFAULT_BOT = "ChatGPT";
-
-let flowGPTBotNames = [];
+const FLOWGPT_DEFAULT_BOT = "chat-with-chatgpt-for-free-flowgpt";
+const FLOWGPT_DEFAULT_MODEL = "Ares Model";
 
 let velloAIBotNames;
 
@@ -3401,11 +3400,7 @@ app.post("/poe_suggest", jsonParser, async function (request, response) {
 });
 
 async function getFlowGPTClient(token, useCache = false) {
-    if (
-        useCache &&
-        cachedClient.client !== null &&
-        cachedClient.site === "flowgpt"
-    ) {
+    if (useCache && cachedClient.client !== null) {
         return cachedClient.client;
     }
 
@@ -3417,7 +3412,7 @@ async function getFlowGPTClient(token, useCache = false) {
 
     let client = null;
 
-    client = new FlowGPTClient(token, FLOWGPT_DEFAULT_BOT);
+    client = new FlowGPTClient(token);
     successfullyInitialized = await client.initializeDriver();
     if (!successfullyInitialized) {
         await client?.closeDriver();
@@ -3442,10 +3437,15 @@ app.post("/status_flowgpt", jsonParser, async (request, response) => {
 
     try {
         const client = await getFlowGPTClient(token, true);
-        flowGPTBotNames = await client.getBotNames();
+        let flowGPTBotNames = await client.getBotNames();
+        let flowGPTModelNames = await client.getModelNames();
         console.log(flowGPTBotNames);
+        console.log(flowGPTModelNames);
 
-        return response.send({ bot_names: flowGPTBotNames });
+        return response.send({
+            bot_names: flowGPTBotNames,
+            model_names: flowGPTModelNames,
+        });
     } catch (err) {
         console.error(err);
 
@@ -3460,21 +3460,17 @@ app.post("/purge_flowgpt", jsonParser, async (request, response) => {
         return response.sendStatus(401);
     }
 
-    const bot = request.body.bot ?? FLOWGPT_DEFAULT_BOT;
+    const botSlug = request.body.bot ?? FLOWGPT_DEFAULT_BOT;
 
     console.log(`!Purging FlowGPT chat!`);
 
     try {
         const client = await getFlowGPTClient(token, true);
 
-        if (
-            flowGPTBotNames[parseInt(bot)] !== client.botName &&
-            flowGPTBotNames[parseInt(bot)] !== undefined
-        ) {
-            await client.changeBot(flowGPTBotNames[parseInt(bot)]);
-        }
+        // Error handling when changing the bot is done by the client
+        // New chat is also initialized by it.
 
-        await client.newChat();
+        await client.changeBot(botSlug);
 
         return response.send({ ok: true });
     } catch (err) {
@@ -3507,6 +3503,8 @@ app.post("/generate_flowgpt", jsonParser, async (request, response) => {
 
     const prompt = request.body.prompt;
     const bot = request.body.bot ?? FLOWGPT_DEFAULT_BOT;
+    const model = request.body.model ?? FLOWGPT_DEFAULT_MODEL;
+    const temperature = parseInt(request.body.temperature) ?? 1;
 
     const editLastMessage = request.body.editLastMessage;
     const regenerateAfterEditing = request.body.regenerateAfterEditing;
@@ -3523,17 +3521,22 @@ app.post("/generate_flowgpt", jsonParser, async (request, response) => {
     try {
         let reply;
 
-        if (bot !== client.botName && flowGPTBotNames.includes(bot)) {
+        if (bot !== client.botName) {
             await client.changeBot(bot);
         }
 
+        if (model !== client.modelName) {
+            await client.changeModel(model);
+        }
+
+        await client.changeTemperature(temperature);
+
         if (editLastMessage) {
             await client.editLastSentMessage(prompt);
-            /* if (regenerateAfterEditing) {
+            if (regenerateAfterEditing) {
                 await client.abortMessage();
                 await client.regenerateMessage();
             }
-            */
         } else {
             await client.sendMessage(prompt);
         }
@@ -3590,7 +3593,7 @@ app.post("/add_flowgpt_bot", jsonParser, async (request, response) => {
         let newBotNames = addBotOutput.newBotNames;
         botNames = newBotNames;
 
-        return response.send({ ok: true, botNames: newBotNames });
+        return response.send({ ok: true, bot_names: newBotNames });
     } catch (err) {
         console.error(err);
         return response.sendStatus(500);
