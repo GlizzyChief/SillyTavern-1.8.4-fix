@@ -192,6 +192,7 @@ class PoeClient {
         });
 
         try {
+            await this.page.waitForSelector(OPEN_IN_APP_TOGGLER_CLASS);
             await this.page.evaluate((classname) => {
                 let toggle = document.querySelector(classname);
                 if (toggle.checked) {
@@ -207,10 +208,11 @@ class PoeClient {
 
         // Attempting to force language to be english while still at /settings
         try {
+            await this.page.waitForSelector(LANGUAGE_SELECT_CLASS);
             // As far as I know, page.select() doesn't allow anything other than a string, so no choice but to
             // manually assign an id to the needed select element.
             await this.page.evaluate((classname) => {
-                document.querySelectorAll(classname)[1].id = "lang";
+                document.querySelector(classname).id = "lang";
             }, LANGUAGE_SELECT_CLASS);
 
             await this.page.select("select#lang", "en");
