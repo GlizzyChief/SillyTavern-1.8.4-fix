@@ -45,8 +45,8 @@ const MISTRAL_MESSAGE_CONTAINER = "div.prose";
 const MISTRAL_STOP_GENERATION_BUTTON = 'button[aria-label="Stop generation"]';
 const MISTRAL_DELETE_BUTTON = 'button[title="Delete"]';
 const MISTRAL_CHAT_LOGO = 'div>div>img[alt="LeChat Logo"]';
-const MISTRAL_BOT_NAME_CONTAINER = 'div[role="option"]';
-const MISTRAL_BOT_LIST_OPENER = 'button[role="combobox"]';
+const MISTRAL_BOT_NAME_CONTAINER = 'div.text-sm.font-medium';
+const MISTRAL_BOT_LIST_OPENER = 'div.hidden>button.flex';
 
 class MistralClient {
     browser = null;
@@ -219,7 +219,8 @@ class MistralClient {
                         "!! Error during sending message in Mistral. Message didn't start generating for 4 seconds"
                     );
                 }
-                await delay(50);
+                // Waiting for just 50 milliseconds proved to be too much, apparently
+                await delay(10);
             }
 
             return true;
@@ -282,7 +283,7 @@ class MistralClient {
                 (containers) => {
                     return containers.map(
                         (container) =>
-                            container.childNodes[1].childNodes[0].textContent
+                            container.textContent
                     );
                 }
             );
