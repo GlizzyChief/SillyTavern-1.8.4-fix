@@ -61,7 +61,6 @@ For getting it to work on any other operating system, please contact me!
 - On mobile, streaming and adding a bot is hit-or-miss, as some messages fail to get sent, causing all kinds of issues. Until a fix is found, I advice sticking to non-streaming on mobile, although it can still work
 - Lately, Poe has been behaiving in a weird manner. Looks like general context windows for some bots have been decreased. Some bots still experience the reduced amount of available tokens
 - FlowGPT randomly banning sessions. Logging out and in again resolves it.
-- Issues when using multiple cookies in Poe. Under investigation.
 - VelloAI client is still not tested fully due to its paid nature. Please report any issues or bugs!
 - New FlowGPT client has some bugs, often caused by the site itself (e.g. chat not getting cleared and so on). Please report any errors you encounter!
 
@@ -123,6 +122,8 @@ For getting it to work on any other operating system, please contact me!
 - Added Google Auth for VelloAI (under testing) and some more bugfixes
 - Completely revamped FlowGPT code as it moved to a new domain
 - Added temperature and model selection to FlowGPT
+- Fixed chat not scrolling in Poe, causing issues when generating and purging messages
+- Changed authentication for Mistral to avoid having to deal with Captcha
 
 ## Contact
 Please drop me a message on [Matrix](https://matrix.to/#/@glizzychief:techsaviours.org) or Discord (glizzychief#1048) if you have any questions or just want to say hi.

@@ -54,7 +54,7 @@ const DEFAULT_FAST_REPLY_PROMPT =
     "\n[Reply to this message with a full stop only]";
 
 const mistral_settings = {
-    bot: "Large",
+    bot: "Mistral Large 2",
     jailbreak_response: DEFAULT_JAILBREAK_RESPONSE,
     jailbreak_message: DEFAULT_JAILBREAK_MESSAGE,
     character_nudge_message: DEFAULT_CHARACTER_NUDGE_MESSAGE,
@@ -389,20 +389,20 @@ async function sendMessage(prompt, withStreaming, withSuggestions, signal) {
 }
 
 async function onConnectClick() {
-    const mistral_email = $("#mistral_email").val().trim();
-    const mistral_password = $("#mistral_password").val();
+    const mistral_cookie_name = $("#mistral_cookie_name").val().trim();
+    const mistral_cookie_value = $("#mistral_cookie_value").val();
 
-    if (mistral_email.length) {
-        await writeSecret(SECRET_KEYS.MISTRAL_EMAIL, mistral_email);
+    if (mistral_cookie_name.length) {
+        await writeSecret(SECRET_KEYS.MISTRAL_COOKIE_NAME, mistral_cookie_name);
     }
 
-    if (mistral_password.length) {
-        await writeSecret(SECRET_KEYS.MISTRAL_PASSWORD, mistral_password);
+    if (mistral_cookie_value.length) {
+        await writeSecret(SECRET_KEYS.MISTRAL_COOKIE_VALUE, mistral_cookie_value);
     }
 
     if (
-        !secret_state[SECRET_KEYS.MISTRAL_EMAIL] ||
-        !secret_state[SECRET_KEYS.MISTRAL_PASSWORD]
+        !secret_state[SECRET_KEYS.MISTRAL_COOKIE_NAME] ||
+        !secret_state[SECRET_KEYS.MISTRAL_COOKIE_VALUE]
     ) {
         console.error("No credentials saved for Mistral");
         return;
@@ -444,7 +444,7 @@ async function checkStatusMistral() {
 
         for (const [value, name] of Object.entries(data.bot_names)) {
             const option = document.createElement("option");
-            option.value = value;
+            option.value = name;
             option.innerText = name;
             $("#mistral_bots").append(option);
         }

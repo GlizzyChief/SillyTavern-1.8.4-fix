@@ -267,9 +267,12 @@ class PoeClient {
         // Until a fix is found, I suggest just throttling it slightly
 
         await delay(700);
-        await this.page.evaluate((classname) => {
-            document.querySelector(classname).scrollIntoView();
-        }, CHAT_GROW_CLASS);
+        // await this.page.evaluate((classname) => {
+            // document.querySelector(classname).scrollIntoView();
+        // }, CHAT_GROW_CLASS);
+        await this.page.evaluate((messageSelector) => {
+            document.querySelectorAll(messageSelector)[document.querySelectorAll(messageSelector).length - 1].scrollIntoView();
+        }, MESSAGE_BUBBLE_CLASS);
         await delay(300);
         console.log("before last message");
         let lastMessage = await this.page.$$eval(
@@ -645,7 +648,7 @@ class PoeClient {
         // Although, this also means that we can safely iterate for a bit, since
         // not a lot of latency is created.
 
-        while (/* stillMoreBotsToLoad || */ safetyCounter < 6) {
+        while (/* stillMoreBotsToLoad || */ safetyCounter < 8) {
             await page.evaluate((classname) => {
                 document.querySelector(classname).scrollIntoView();
             }, INFINITE_SCROLL_CLASS);

@@ -3784,7 +3784,7 @@ app.post("/purge_vello", jsonParser, async (request, response) => {
     }
 });
 
-async function getMistralClient(email, password, useCache = false) {
+async function getMistralClient(authCookieName, authCookieValue, useCache = false) {
     if (
         useCache &&
         cachedClient.client !== null &&
@@ -3801,7 +3801,7 @@ async function getMistralClient(email, password, useCache = false) {
 
     let client = null;
 
-    client = new MistralClient(email, password);
+    client = new MistralClient(authCookieName, authCookieValue);
     successfullyInitialized = await client.initializeDriver();
     if (!successfullyInitialized) {
         await client?.closeDriver();
@@ -3818,15 +3818,15 @@ async function getMistralClient(email, password, useCache = false) {
 }
 
 app.post("/status_mistral", jsonParser, async (request, response) => {
-    const email = readSecret(SECRET_KEYS.MISTRAL_EMAIL);
-    const password = readSecret(SECRET_KEYS.MISTRAL_PASSWORD);
+    const authCookieName = readSecret(SECRET_KEYS.MISTRAL_COOKIE_NAME);
+    const authCookieValue = readSecret(SECRET_KEYS.MISTRAL_COOKIE_VALUE);
 
-    if (!email || !password) {
+    if (!authCookieName || !authCookieValue) {
         return response.sendStatus(401);
     }
 
     try {
-        const client = await getMistralClient(email, password, true);
+        const client = await getMistralClient(authCookieName, authCookieValue, true);
         let mistralBotNames = await client.getBotNames();
 
         return response.send({ bot_names: mistralBotNames });
@@ -3838,10 +3838,10 @@ app.post("/status_mistral", jsonParser, async (request, response) => {
 });
 
 app.post("/purge_mistral", jsonParser, async (request, response) => {
-    const email = readSecret(SECRET_KEYS.MISTRAL_EMAIL);
-    const password = readSecret(SECRET_KEYS.MISTRAL_PASSWORD);
+    const authCookieName = readSecret(SECRET_KEYS.MISTRAL_COOKIE_NAME);
+    const authCookieValue = readSecret(SECRET_KEYS.MISTRAL_COOKIE_VALUE);
 
-    if (!email || !password) {
+    if (!authCookieName || !authCookieValue) {
         return response.sendStatus(401);
     }
 
@@ -3850,7 +3850,7 @@ app.post("/purge_mistral", jsonParser, async (request, response) => {
     console.log(`!!!!!!!!!!!! NEED TO PURGE ${count} MESSAGES (Mistral)!`);
 
     try {
-        const client = await getMistralClient(email, password, true);
+        const client = await getMistralClient(authCookieName, authCookieValue, true);
 
         if (count > 0) {
             await client.deleteMessages(count);
@@ -3871,10 +3871,10 @@ app.post("/generate_mistral", jsonParser, async (request, response) => {
         return response.sendStatus(400);
     }
 
-    const email = readSecret(SECRET_KEYS.MISTRAL_EMAIL);
-    const password = readSecret(SECRET_KEYS.MISTRAL_PASSWORD);
+    const authCookieName = readSecret(SECRET_KEYS.MISTRAL_COOKIE_NAME);
+    const authCookieValue = readSecret(SECRET_KEYS.MISTRAL_COOKIE_VALUE);
 
-    if (!email || !password) {
+    if (!authCookieName || !authCookieValue) {
         return response.sendStatus(401);
     }
 
@@ -3891,14 +3891,15 @@ app.post("/generate_mistral", jsonParser, async (request, response) => {
     });
 
     const prompt = request.body.prompt;
-    const bot = request.body.bot ?? "Large";
+    const bot = request.body.bot ?? "Mistral Large 2";
+    console.log(bot);
 
     const streaming = request.body.streaming ?? false;
 
     let client;
 
     try {
-        client = await getMistralClient(email, password, true);
+        client = await getMistralClient(authCookieName, authCookieValue, true);
     } catch (error) {
         console.error(error);
         return response.sendStatus(500);
@@ -3915,6 +3916,7 @@ app.post("/generate_mistral", jsonParser, async (request, response) => {
 
             // necessary due to double jb issues
             await delay(80);
+
 
             let reply = "";
             while (!isGenerationStopped) {
@@ -4937,8 +4939,8 @@ const SECRET_KEYS = {
     FLOWGPT: "api_key_flowgpt",
     VELLO_EMAIL: "api_vello_email",
     VELLO_PASSWORD: "api_vello_password",
-    MISTRAL_EMAIL: "api_mistral_email",
-    MISTRAL_PASSWORD: "api_mistral_password",
+    MISTRAL_COOKIE_NAME: "api_mistral_cookie_name",
+    MISTRAL_COOKIE_VALUE: "api_mistral_cookie_value",
     CLAUDE: "api_key_claude",
     DEEPL: "deepl",
     OPENROUTER: "api_key_openrouter",

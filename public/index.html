@@ -2222,31 +2222,28 @@
                         </h4>
                         <span>
                             <ol>
-                                <li>Just input the email and password you used for registration. The data is kept locally and is only used during authentication.</li>
+                                <li>After logging in to mistral.ai, find the cookie starting with "ory_session". Input its name and its value below to connect.</li>
                             </ol>
                         </span>
 
                         <div class="widthFreeExpand">
                             <div class="flex-container">
-                                <h4>Email:</h4>
-                                <input id="mistral_email" class="text_pole flex1" type="text" maxlength="1000" autocomplete="off" />
-                                <div title="Clear your email" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_mistral_email">
+                                <h4>Cookie name:</h4>
+                                <input id="mistral_cookie_name" class="text_pole flex1" type="text" maxlength="1000" autocomplete="off" />
+                                <div title="Clear your email" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_mistral_cookie_name">
                                 </div>
-                            </div>
-                            <div data-for="mistral_email" class="neutral_warning">
-                                For privacy reasons, your email will be hidden after you reload the page.
                             </div>
                         </div>
 
                         <div class="widthFreeExpand">
                             <div class="flex-container">
-                                <h4>Password:</h4>
-                                <input id="mistral_password" class="text_pole flex1" type="text" maxlength="1000" autocomplete="off" />
-                                <div title="Clear your password" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_mistral_password">
+                                <h4>Cookie value:</h4>
+                                <input id="mistral_cookie_value" class="text_pole flex1" type="text" maxlength="1000" autocomplete="off" />
+                                <div title="Clear your password" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_mistral_cookie_value">
                                 </div>
                             </div>
-                            <div data-for="mistral_password" class="neutral_warning">
-                                For privacy reasons, your password will be hidden after you reload the page.
+                            <div data-for="mistral_cookie_value" class="neutral_warning">
+                                For privacy reasons, your cookie info will be hidden after you reload the page.
                             </div>
                         </div>
 

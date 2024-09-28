@@ -51,12 +51,12 @@ const MISTRAL_BOT_LIST_OPENER = 'div.hidden>button.flex';
 class MistralClient {
     browser = null;
     page = null;
-    email = null;
-    password = null;
+    authCookieName = null;
+    authCookieValue = null;
 
-    constructor(email, password) {
-        this.email = email;
-        this.password = password;
+    constructor(authCookieName, authCookieValue) {
+        this.authCookieName = authCookieName;
+        this.authCookieValue = authCookieValue
     }
 
     async closeDriver() {
@@ -131,13 +131,9 @@ class MistralClient {
 
         await this.page.goto("https://chat.mistral.ai");
 
-        let emailInput = await this.page.$(MISTRAL_EMAIL_INPUT);
-        let passwordInput = await this.page.$(MISTRAL_PASSWORD_INPUT);
+        await this.page.setCookie({ name: this.authCookieName, value: this.authCookieValue, domain: ".mistral.ai" });
 
-        await emailInput.type(this.email);
-        await passwordInput.type(this.password);
-
-        await passwordInput.press("Enter");
+        await this.page.goto("https://chat.mistral.ai");
 
         await this.page.waitForSelector("textarea");
 
@@ -214,9 +210,9 @@ class MistralClient {
 
                 let milliSecondsElapsed = Math.floor(Date.now() - startTime);
 
-                if (milliSecondsElapsed > 4000) {
+                if (milliSecondsElapsed > 2000) {
                     throw Error(
-                        "!! Error during sending message in Mistral. Message didn't start generating for 4 seconds"
+                        "!! Error during sending message in Mistral. Message didn't start generating for 4 seconds, or didn't create the \"Stop generating\" button"
                     );
                 }
                 // Waiting for just 50 milliseconds proved to be too much, apparently
@@ -304,10 +300,14 @@ class MistralClient {
             // Probably can shave off a little bit of time by
             // simply not closing the bot selector after
             // opening it
+            
+            console.log("CHANGING BOT TO ", botName)
 
             let botListOpener = await this.page.$(MISTRAL_BOT_LIST_OPENER);
 
             await botListOpener.click();
+
+            await delay(100);
 
             let botId = botNames.indexOf(botName);
 
@@ -322,5 +322,6 @@ class MistralClient {
         }
     }
 }
+
 
 module.exports = MistralClient;
