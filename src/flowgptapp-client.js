@@ -35,22 +35,26 @@ let stealthPlugin = StealthPlugin();
 puppeteerWithPlugin.use(stealthPlugin);
 
 // Selectors for easier fixing in the future
-const MODAL_CLOSE_SELECTOR = ".chakra-modal__close-btn";
-const MESSAGE_TEXTAREA = "textarea.chakra-textarea";
-const INDIVIDUAL_MODEL_SELECTOR = "div.css-wp1z31";
+const MODAL_CLOSE_SELECTOR = ".chakra-modal__close-btn"; // not needed for now
+const MESSAGE_TEXTAREA = "textarea";
+const INDIVIDUAL_MODEL_SELECTOR = "button.css-57ovpy>span";
+// Also matches the "Individual Models" selector button!
+const COMMON_MODEL_SELECTOR = "div.cursor-pointer.items-center>p";
 const BOT_NAME_SELECTOR = "div>span.line-clamp-1";
-const COMMON_MODEL_SELECTOR = "div>p.chakra-text";
-const FOLLOW_BOT_BUTTON_SELECTOR = "button.css-14qm5r1";
-const MESSAGE_GENERATING_SPINNER_SELECTOR = ".chakra-spinner";
-const NEW_CHAT_BUTTON_SELECTOR = "button.chakra-menu__menuitem"; // returns 17 items, the first item is what we're after
+const FOLLOW_BOT_BUTTON_SELECTOR = 'button[aria-label="Follow"]';
+const UNFOLLOW_BOT_BUTTON_SELECTOR = 'button[aria-label="Unfollow"]';
+const STOP_MESSAGE_GENERATION_BUTTON = "button>svg.css-n059si";
+const NEW_CHAT_BUTTON_SELECTOR = 'button[aria-label="Save and Start New Chat"]';
 const AMAZON_CAPTCHA_MODAL_SELECTOR = "div.amzn-captcha-modal-title"; // hopefully will never be seen lmao
 const MESSAGE_MARKDOWN_CONTAINER_SELECTOR = ".flowgpt-markdown";
-const SEND_MESSAGE_BUTTON_SELECTOR = "button[aria-label='Send']"; // not really used but kept just in case
+// not really used but kept just in case
+// Note! Might be needed for stopping message generation
+const SEND_MESSAGE_BUTTON_SELECTOR = "button[aria-label='Send']";
 // This selects far too many elements. As such, the second to last message must be found, and only then this selector should be applied
 const EDIT_BUTTON_SELECTOR =
-    "div.flex.gap-5.transition-opacity.opacity-0>div.cursor-pointer";
-const EDIT_TEXTAREA_SELECTOR = "div.relative>textarea.w-full";
-const EDIT_CONFIRM_BUTTON_SELECTOR = "div.flex.gap-2.absolute>svg:nth-child(2)";
+    "div.flex.gap-5.transition-opacity>div";
+const EDIT_TEXTAREA_SELECTOR = "textarea#message-editing-box";
+const EDIT_CONFIRM_BUTTON_SELECTOR = 'button[aria-label="Confirm edit"]';
 const REGENERATE_MESSAGE_SELECTOR = "div.cursor-pointer";
 const CHANGE_TEMPERATURE_BUTTON = "div.chakra-menu__menu-list>button"; // 0 => newChat, 1 => high, 2 => medium, 3 => low
 
@@ -183,24 +187,26 @@ class FlowGPTClient {
         });
 
         // The ad for app seems to load all the time, but will still be
-        // error handled and waited for for only 5 seconds in case
+        // error handled and waited for for only 7 seconds in case
         // they remove the ad in the future
 
-        try {
-            await this.page.waitForSelector(MODAL_CLOSE_SELECTOR, {
-                timeout: 7000,
-            });
+        // Looks like they removed the ad, no neet to wait for it
 
-            // Close the modal.
-            await this.page.evaluate((buttonSelector) => {
-                document.querySelector(buttonSelector).click();
-            }, MODAL_CLOSE_SELECTOR);
-        } catch (e) {
-            console.error(e);
-            console.log(
-                "Ad not loaded! Please notify the developer to remove the check for it. This will significantly reduce the loading time"
-            );
-        }
+        // try {
+        //     await this.page.waitForSelector(MODAL_CLOSE_SELECTOR, {
+        //         timeout: 7000,
+        //     });
+
+        //     // Close the modal.
+        //     await this.page.evaluate((buttonSelector) => {
+        //         document.querySelector(buttonSelector).click();
+        //     }, MODAL_CLOSE_SELECTOR);
+        // } catch (e) {
+        //     console.error(e);
+        //     console.log(
+        //         "Ad not loaded! Please notify the developer to remove the check for it. This will significantly reduce the loading time"
+        //     );
+        // }
 
         console.log("Waiting for page load...");
 
@@ -417,14 +423,17 @@ class FlowGPTClient {
         }
     }
 
-    // FlowGPT seemingly removed the option to regenerate messages, so this is disabled for now.
+    
+    // Should not be enabled for now. Too many bugs.
+    // For example, user's last message seems to disasppear
+    // after trying to regenerate the last response.
     async regenerateMessage() {
         try {
             console.log(`DEBUG: Attempting to regenerate last message...`);
 
             if (await this.isGenerating()) await this.abortMessage();
 
-            await delay(800);
+            await delay(3000);
 
             await this.page.evaluate(
                 (messageSelector, regenerateButtonSelector) => {
@@ -466,8 +475,7 @@ class FlowGPTClient {
         let stillGenerating = await this.isGenerating();
         if (!stillGenerating) return false;
 
-        // For some reason clicking on the spinner is enough
-        await this.page.click(MESSAGE_GENERATING_SPINNER_SELECTOR);
+        await this.page.click(STOP_MESSAGE_GENERATION_BUTTON);
 
         return true;
     }
@@ -490,7 +498,7 @@ class FlowGPTClient {
                         .length !== 0
                 );
             },
-            MESSAGE_GENERATING_SPINNER_SELECTOR
+            STOP_MESSAGE_GENERATION_BUTTON
         );
 
         return isGenerating;
@@ -712,8 +720,7 @@ class FlowGPTClient {
         if (
             await this.page.evaluate(() => {
                 return (
-                    document.querySelector("h1.hidden")?.textContent ===
-                    "Page not found"
+                    window.location.href === "https://flowgpt.app/"
                 );
             })
         ) {
@@ -722,14 +729,34 @@ class FlowGPTClient {
             return { error: true };
         }
 
-        await this.page.waitForSelector(FOLLOW_BOT_BUTTON_SELECTOR);
+
+        // Should only be triggered if a user adds a bot outside the window opened by ST
+        if (
+            await this.page.evaluate((unfollowButtonSelector) => {
+                return (
+                    document.querySelectorAll(unfollowButtonSelector).length !== 0
+                );
+            }, UNFOLLOW_BOT_BUTTON_SELECTOR)
+        ) {
+            console.log(`Couldn't add bot ${botName} - bot already followed!`);
+            await this.page.goto(currentPage);
+            return { error: true };
+        }
 
         try {
+            
+            await this.page.waitForSelector(FOLLOW_BOT_BUTTON_SELECTOR);
+            // await this.page.click(FOLLOW_BOT_BUTTON_SELECTOR)
             await this.page.evaluate((followButtonSelector) => {
-                document.querySelector(followButtonSelector)[0].click();
+                document.querySelector(followButtonSelector).click();
             }, FOLLOW_BOT_BUTTON_SELECTOR);
 
+            console.log("Bot followed, fetching list of new bots")
+
+            await this.page.reload({ waitUntil: "networkidle2" });
+
             let newBotNames = await this.getBotNames();
+            console.log(newBotNames)
             return { error: false, newBotNames };
         } catch (e) {
             console.error(e);
@@ -742,6 +769,9 @@ class FlowGPTClient {
     // 1 => high, 2 => normal, 3 => low
     async changeTemperature(temperature) {
         try {
+
+            console.log(`Changing temperature to ${["high", "normal", "low"][temperature - 1]}`)
+
             if (temperature < 1 || temperature > 3) temperature = 2;
 
             await this.page.waitForSelector(CHANGE_TEMPERATURE_BUTTON);
@@ -750,7 +780,7 @@ class FlowGPTClient {
                 (temperatureIndex, changeTemperatureSelector) => {
                     document
                         .querySelectorAll(changeTemperatureSelector)
-                        [temperatureIndex].click();
+                        [temperatureIndex-1].click();
                 },
                 temperature,
                 CHANGE_TEMPERATURE_BUTTON

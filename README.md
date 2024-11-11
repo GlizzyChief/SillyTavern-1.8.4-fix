@@ -62,7 +62,7 @@ For getting it to work on any other operating system, please contact me!
 - Lately, Poe has been behaiving in a weird manner. Looks like general context windows for some bots have been decreased. Some bots still experience the reduced amount of available tokens
 - FlowGPT randomly banning sessions. Logging out and in again resolves it.
 - VelloAI client is still not tested fully due to its paid nature. Please report any issues or bugs!
-- New FlowGPT client has some bugs, often caused by the site itself (e.g. chat not getting cleared and so on). Please report any errors you encounter!
+- New FlowGPT client has some bugs, mainly message regeneration after message editing not working. Disabled until it works all the time.
 
 
 ## Recent fixes/features
@@ -124,6 +124,7 @@ For getting it to work on any other operating system, please contact me!
 - Added temperature and model selection to FlowGPT
 - Fixed chat not scrolling in Poe, causing issues when generating and purging messages
 - Changed authentication for Mistral to avoid having to deal with Captcha
+- Updated FlowGPT integration following website update
 
 ## Contact
 Please drop me a message on [Matrix](https://matrix.to/#/@glizzychief:techsaviours.org) or Discord (glizzychief#1048) if you have any questions or just want to say hi.

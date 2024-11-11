@@ -138,7 +138,7 @@ function onModelChange() {
 }
 
 function onTemperatureChange() {
-    flowgpt_settings.bot = $("#flowgpt_temperatures").find(":selected").val();
+    flowgpt_settings.temperature = $("#flowgpt_temperatures").find(":selected").val();
     saveSettingsDebounced();
 }
 

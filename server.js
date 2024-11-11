@@ -3504,7 +3504,7 @@ app.post("/generate_flowgpt", jsonParser, async (request, response) => {
     const prompt = request.body.prompt;
     const bot = request.body.bot ?? FLOWGPT_DEFAULT_BOT;
     const model = request.body.model ?? FLOWGPT_DEFAULT_MODEL;
-    const temperature = parseInt(request.body.temperature) ?? 1;
+    const temperature = parseInt(request.body.temperature) ?? 2; // medium as default temperature
 
     const editLastMessage = request.body.editLastMessage;
     const regenerateAfterEditing = request.body.regenerateAfterEditing;
@@ -3535,7 +3535,7 @@ app.post("/generate_flowgpt", jsonParser, async (request, response) => {
             await client.editLastSentMessage(prompt);
             if (regenerateAfterEditing) {
                 await client.abortMessage();
-                await client.regenerateMessage();
+                // await client.regenerateMessage();
             }
         } else {
             await client.sendMessage(prompt);
