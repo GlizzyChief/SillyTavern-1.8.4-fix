@@ -45,8 +45,8 @@ const MISTRAL_MESSAGE_CONTAINER = "div.prose";
 const MISTRAL_STOP_GENERATION_BUTTON = 'button[aria-label="Stop generation"]';
 const MISTRAL_DELETE_BUTTON = 'button[title="Delete"]';
 const MISTRAL_CHAT_LOGO = 'div>div>img[alt="LeChat Logo"]';
-const MISTRAL_BOT_NAME_CONTAINER = 'div.text-sm.font-medium';
-const MISTRAL_BOT_LIST_OPENER = 'div.hidden>button.flex';
+const MISTRAL_BOT_NAME_CONTAINER = "div.text-sm.font-medium";
+const MISTRAL_BOT_LIST_OPENER = "div.hidden>button.flex";
 
 class MistralClient {
     browser = null;
@@ -56,7 +56,7 @@ class MistralClient {
 
     constructor(authCookieName, authCookieValue) {
         this.authCookieName = authCookieName;
-        this.authCookieValue = authCookieValue
+        this.authCookieValue = authCookieValue;
     }
 
     async closeDriver() {
@@ -131,7 +131,11 @@ class MistralClient {
 
         await this.page.goto("https://chat.mistral.ai");
 
-        await this.page.setCookie({ name: this.authCookieName, value: this.authCookieValue, domain: ".mistral.ai" });
+        await this.page.setCookie({
+            name: this.authCookieName,
+            value: this.authCookieValue,
+            domain: ".mistral.ai",
+        });
 
         await this.page.goto("https://chat.mistral.ai");
 
@@ -270,23 +274,26 @@ class MistralClient {
 
     async getBotNames() {
         try {
-            let botListOpener = await this.page.$(MISTRAL_BOT_LIST_OPENER);
+            await this.page.waitForSelector(MISTRAL_BOT_LIST_OPENER);
 
-            await botListOpener.click();
+            await this.page.evaluate((botOpenerSelector) => {
+                document.querySelectorAll(botOpenerSelector)[1].click();
+            }, MISTRAL_BOT_LIST_OPENER);
+
+            await this.page.waitForSelector(MISTRAL_BOT_NAME_CONTAINER);
 
             let botNames = await this.page.$$eval(
                 MISTRAL_BOT_NAME_CONTAINER,
                 (containers) => {
-                    return containers.map(
-                        (container) =>
-                            container.textContent
-                    );
+                    return containers.map((container) => container.textContent);
                 }
             );
 
             await this.page.click("body");
 
-            return botNames;
+            // Last element is "Create an agent in La Plateforme", so we remove it
+
+            return botNames.slice(0, botNames.length - 1);
         } catch (e) {
             console.error("Couldn't get bot names. Please report this issues!");
             throw e;
@@ -300,12 +307,16 @@ class MistralClient {
             // Probably can shave off a little bit of time by
             // simply not closing the bot selector after
             // opening it
-            
-            console.log("CHANGING BOT TO ", botName)
 
-            let botListOpener = await this.page.$(MISTRAL_BOT_LIST_OPENER);
+            console.log("CHANGING BOT TO ", botName);
 
-            await botListOpener.click();
+            await this.page.waitForSelector(MISTRAL_BOT_LIST_OPENER);
+
+            await this.page.evaluate((botOpenerSelector) => {
+                document.querySelectorAll(botOpenerSelector)[1].click();
+            }, MISTRAL_BOT_LIST_OPENER);
+
+            await this.page.waitForSelector(MISTRAL_BOT_NAME_CONTAINER);
 
             await delay(100);
 
@@ -322,6 +333,5 @@ class MistralClient {
         }
     }
 }
-
 
 module.exports = MistralClient;

@@ -35,7 +35,7 @@ let stealthPlugin = StealthPlugin();
 puppeteerWithPlugin.use(stealthPlugin);
 
 // Selectors for easier fixing in the future
-const MODAL_CLOSE_SELECTOR = ".chakra-modal__close-btn"; // not needed for now
+const MODAL_CLOSE_SELECTOR = ".chakra-modal__close-btn"; // Seems to pop up every time a page is reloaded.
 const MESSAGE_TEXTAREA = "textarea";
 const INDIVIDUAL_MODEL_SELECTOR = "button.css-57ovpy>span";
 // Also matches the "Individual Models" selector button!
@@ -51,8 +51,7 @@ const MESSAGE_MARKDOWN_CONTAINER_SELECTOR = ".flowgpt-markdown";
 // Note! Might be needed for stopping message generation
 const SEND_MESSAGE_BUTTON_SELECTOR = "button[aria-label='Send']";
 // This selects far too many elements. As such, the second to last message must be found, and only then this selector should be applied
-const EDIT_BUTTON_SELECTOR =
-    "div.flex.gap-5.transition-opacity>div";
+const EDIT_BUTTON_SELECTOR = "div.flex.gap-5.transition-opacity>div";
 const EDIT_TEXTAREA_SELECTOR = "textarea#message-editing-box";
 const EDIT_CONFIRM_BUTTON_SELECTOR = 'button[aria-label="Confirm edit"]';
 const REGENERATE_MESSAGE_SELECTOR = "div.cursor-pointer";
@@ -191,6 +190,8 @@ class FlowGPTClient {
         // they remove the ad in the future
 
         // Looks like they removed the ad, no neet to wait for it
+        // Instead of this ad, we now get an ad that seems to pop every time
+        // a page is reloaded.
 
         // try {
         //     await this.page.waitForSelector(MODAL_CLOSE_SELECTOR, {
@@ -277,6 +278,24 @@ class FlowGPTClient {
 
             await delay(300);
 
+            // Before interacting with input, have to make sure that the ad is close (if present)
+            // Otherwise, Enter simply closes the ad without sending the input
+
+            try {
+                // 4 seconds seems like a lot, but testing shows that
+                // the advertisement never fails to show up after pretty much any action.
+                await this.page.waitForSelector(MODAL_CLOSE_SELECTOR, {
+                    timeout: 4000,
+                });
+
+                // Close the modal.
+                await this.page.evaluate((buttonSelector) => {
+                    document.querySelector(buttonSelector).click();
+                }, MODAL_CLOSE_SELECTOR);
+            } catch (e) {
+                console.error(e);
+            }
+
             await this.page.evaluate(
                 (message, textareaSelector) => {
                     let tarea = document.querySelector(textareaSelector);
@@ -346,6 +365,21 @@ class FlowGPTClient {
             await this.page.waitForSelector(
                 MESSAGE_MARKDOWN_CONTAINER_SELECTOR
             );
+
+            try {
+                // 4 seconds seems like a lot, but testing shows that
+                // the advertisement never fails to show up after pretty much any action.
+                await this.page.waitForSelector(MODAL_CLOSE_SELECTOR, {
+                    timeout: 4000,
+                });
+
+                // Close the modal.
+                await this.page.evaluate((buttonSelector) => {
+                    document.querySelector(buttonSelector).click();
+                }, MODAL_CLOSE_SELECTOR);
+            } catch (e) {
+                console.error(e);
+            }
 
             let _ = await this.page.evaluate(
                 (messageSelector, editButtonSelector) => {
@@ -423,7 +457,6 @@ class FlowGPTClient {
         }
     }
 
-    
     // Should not be enabled for now. Too many bugs.
     // For example, user's last message seems to disasppear
     // after trying to regenerate the last response.
@@ -508,9 +541,34 @@ class FlowGPTClient {
     // Changing a model shouldn't require any additional JBing or such.
     async getModelNames() {
         try {
-            await this.page.waitForSelector(INDIVIDUAL_MODEL_SELECTOR);
-            await this.page.waitForSelector(COMMON_MODEL_SELECTOR);
             // FlowGPT has 2 separate bot lists. Have to fetch both and combine for completeness
+
+            // INDIVIDUAL_MODEL_SELECTOR will always time out unless the
+            // "Individual Models" button is pressed beforehand.
+            await this.page.waitForSelector(COMMON_MODEL_SELECTOR);
+
+            // Basically, the items returned by selector contain the selected model (first element),
+            // all common models and then the text "Individual models". Hence skipping first and last element
+            let commonModelNames = await this.page.evaluate(
+                (commonModelSelector) => {
+                    let out = [];
+
+                    let commonModels =
+                        document.querySelectorAll(commonModelSelector);
+
+                    commonModels[commonModels.length - 1].click();
+
+                    // NodeList doesn't support methods like slice or map, so have to use a simple loop
+                    for (let i = 1; i < commonModels.length - 1; i++) {
+                        out.push(commonModels[i].textContent);
+                    }
+                    return out;
+                },
+                COMMON_MODEL_SELECTOR
+            );
+
+            await this.page.waitForSelector(INDIVIDUAL_MODEL_SELECTOR);
+
             let individualModelNames = await this.page.evaluate(
                 (individualModelSelector) => {
                     let out = [];
@@ -524,24 +582,6 @@ class FlowGPTClient {
                 INDIVIDUAL_MODEL_SELECTOR
             );
 
-            // Basically, the items returned by selector contain the selected model (first element),
-            // all common models and then the text "Individual models". Hence skipping first and last element
-            let commonModelNames = await this.page.evaluate(
-                (commonModelSelector) => {
-                    let out = [];
-
-                    let commonModels =
-                        document.querySelectorAll(commonModelSelector);
-
-                    // NodeList doesn't support methods like slice or map, so have to use a simple loop
-                    for (let i = 1; i < commonModels.length - 1; i++) {
-                        out.push(commonModels[i].textContent);
-                    }
-                    return out;
-                },
-                COMMON_MODEL_SELECTOR
-            );
-
             return [...commonModelNames, ...individualModelNames];
         } catch (e) {
             console.error(e);
@@ -552,8 +592,17 @@ class FlowGPTClient {
     async changeModel(modelName) {
         try {
             console.log(`Changing to model ${modelName}`);
-            await this.page.waitForSelector(INDIVIDUAL_MODEL_SELECTOR);
+            // Same as with getModels. We need to open the list of models first.
+
             await this.page.waitForSelector(COMMON_MODEL_SELECTOR);
+            await this.page.evaluate((commonModelSelector) => {
+                let commonModels =
+                    document.querySelectorAll(commonModelSelector);
+
+                commonModels[commonModels.length - 1].click();
+            }, COMMON_MODEL_SELECTOR);
+
+            await this.page.waitForSelector(INDIVIDUAL_MODEL_SELECTOR);
 
             // Iterate through both model types and return as soon as the desired model is found and clicked.
             let successfullyChangedModel = await this.page.evaluate(
@@ -719,9 +768,7 @@ class FlowGPTClient {
 
         if (
             await this.page.evaluate(() => {
-                return (
-                    window.location.href === "https://flowgpt.app/"
-                );
+                return window.location.href === "https://flowgpt.app/";
             })
         ) {
             console.log(`Couldn't add bot ${botName} - bot not found!`);
@@ -729,12 +776,12 @@ class FlowGPTClient {
             return { error: true };
         }
 
-
         // Should only be triggered if a user adds a bot outside the window opened by ST
         if (
             await this.page.evaluate((unfollowButtonSelector) => {
                 return (
-                    document.querySelectorAll(unfollowButtonSelector).length !== 0
+                    document.querySelectorAll(unfollowButtonSelector).length !==
+                    0
                 );
             }, UNFOLLOW_BOT_BUTTON_SELECTOR)
         ) {
@@ -744,19 +791,18 @@ class FlowGPTClient {
         }
 
         try {
-            
             await this.page.waitForSelector(FOLLOW_BOT_BUTTON_SELECTOR);
             // await this.page.click(FOLLOW_BOT_BUTTON_SELECTOR)
             await this.page.evaluate((followButtonSelector) => {
                 document.querySelector(followButtonSelector).click();
             }, FOLLOW_BOT_BUTTON_SELECTOR);
 
-            console.log("Bot followed, fetching list of new bots")
+            console.log("Bot followed, fetching list of new bots");
 
             await this.page.reload({ waitUntil: "networkidle2" });
 
             let newBotNames = await this.getBotNames();
-            console.log(newBotNames)
+            console.log(newBotNames);
             return { error: false, newBotNames };
         } catch (e) {
             console.error(e);
@@ -769,8 +815,11 @@ class FlowGPTClient {
     // 1 => high, 2 => normal, 3 => low
     async changeTemperature(temperature) {
         try {
-
-            console.log(`Changing temperature to ${["high", "normal", "low"][temperature - 1]}`)
+            console.log(
+                `Changing temperature to ${
+                    ["high", "normal", "low"][temperature - 1]
+                }`
+            );
 
             if (temperature < 1 || temperature > 3) temperature = 2;
 
@@ -780,7 +829,7 @@ class FlowGPTClient {
                 (temperatureIndex, changeTemperatureSelector) => {
                     document
                         .querySelectorAll(changeTemperatureSelector)
-                        [temperatureIndex-1].click();
+                        [temperatureIndex - 1].click();
                 },
                 temperature,
                 CHANGE_TEMPERATURE_BUTTON

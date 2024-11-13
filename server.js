@@ -3400,11 +3400,15 @@ app.post("/poe_suggest", jsonParser, async function (request, response) {
 });
 
 async function getFlowGPTClient(token, useCache = false) {
-    if (useCache && cachedClient.client !== null) {
+    if (
+        useCache &&
+        cachedClient.client !== null &&
+        cachedClient.site === "flowgpt"
+    ) {
         return cachedClient.client;
     }
 
-    if (cachedClient.client !== null && cachedClient.site !== "") {
+    if (useCache && cachedClient.client !== null && cachedClient.site !== "") {
         await cachedClient.client?.closeDriver();
         cachedClient.client = null;
         cachedClient.site = "";
@@ -3784,7 +3788,11 @@ app.post("/purge_vello", jsonParser, async (request, response) => {
     }
 });
 
-async function getMistralClient(authCookieName, authCookieValue, useCache = false) {
+async function getMistralClient(
+    authCookieName,
+    authCookieValue,
+    useCache = false
+) {
     if (
         useCache &&
         cachedClient.client !== null &&
@@ -3826,7 +3834,11 @@ app.post("/status_mistral", jsonParser, async (request, response) => {
     }
 
     try {
-        const client = await getMistralClient(authCookieName, authCookieValue, true);
+        const client = await getMistralClient(
+            authCookieName,
+            authCookieValue,
+            true
+        );
         let mistralBotNames = await client.getBotNames();
 
         return response.send({ bot_names: mistralBotNames });
@@ -3850,7 +3862,11 @@ app.post("/purge_mistral", jsonParser, async (request, response) => {
     console.log(`!!!!!!!!!!!! NEED TO PURGE ${count} MESSAGES (Mistral)!`);
 
     try {
-        const client = await getMistralClient(authCookieName, authCookieValue, true);
+        const client = await getMistralClient(
+            authCookieName,
+            authCookieValue,
+            true
+        );
 
         if (count > 0) {
             await client.deleteMessages(count);
@@ -3916,7 +3932,6 @@ app.post("/generate_mistral", jsonParser, async (request, response) => {
 
             // necessary due to double jb issues
             await delay(80);
-
 
             let reply = "";
             while (!isGenerationStopped) {
