@@ -47,6 +47,7 @@ const MISTRAL_DELETE_BUTTON = 'button[title="Delete"]';
 const MISTRAL_CHAT_LOGO = 'div>div>img[alt="LeChat Logo"]';
 const MISTRAL_BOT_NAME_CONTAINER = "div.text-sm.font-medium";
 const MISTRAL_BOT_LIST_OPENER = "div.hidden>button.flex";
+const MISTRAL_SEND_MESSAGE_BUTTON = 'button[aria-label="Send question"]';
 
 class MistralClient {
     browser = null;
@@ -172,7 +173,7 @@ class MistralClient {
     }
 
     async getLatestMessageStreaming() {
-        console.log("Getting latest message...");
+        console.log("Getting latest message (streaming)...");
 
         let lastMessage = await this.page.evaluate((containerSelector) => {
             let allMessageContainers =
@@ -198,11 +199,12 @@ class MistralClient {
 
             await inputField.press("Space");
             await inputField.press("Backspace");
-            await inputField.press("Enter");
+
+            await this.page.click(MISTRAL_SEND_MESSAGE_BUTTON);
 
             // Replace with awaiting for isGenerating to be true and timing out after
             // a few seconds if it's still isn't
-            await delay(2000);
+            await delay(100);
 
             let startTime = Date.now();
             while (true) {
@@ -272,36 +274,46 @@ class MistralClient {
         await this.page.goto("https://chat.mistral.ai/chat");
     }
 
+    // Currently, only "Large 2" is available. Custom agents need a subscription
+    // Due to the lack of subscription, I'm just going to make this
+    // function return Large 2 for now.
     async getBotNames() {
         try {
-            await this.page.waitForSelector(MISTRAL_BOT_LIST_OPENER);
+            // Absolutely not a good solution
+            return ["Large 2"];
 
-            await this.page.evaluate((botOpenerSelector) => {
-                document.querySelectorAll(botOpenerSelector)[1].click();
-            }, MISTRAL_BOT_LIST_OPENER);
+            // await this.page.waitForSelector(MISTRAL_BOT_LIST_OPENER);
 
-            await this.page.waitForSelector(MISTRAL_BOT_NAME_CONTAINER);
+            // await this.page.evaluate((botOpenerSelector) => {
+            //     document.querySelectorAll(botOpenerSelector)[1].click();
+            // }, MISTRAL_BOT_LIST_OPENER);
 
-            let botNames = await this.page.$$eval(
-                MISTRAL_BOT_NAME_CONTAINER,
-                (containers) => {
-                    return containers.map((container) => container.textContent);
-                }
-            );
+            // await this.page.waitForSelector(MISTRAL_BOT_NAME_CONTAINER);
 
-            await this.page.click("body");
+            // let botNames = await this.page.$$eval(
+            //     MISTRAL_BOT_NAME_CONTAINER,
+            //     (containers) => {
+            //         return containers.map((container) => container.textContent);
+            //     }
+            // );
 
-            // Last element is "Create an agent in La Plateforme", so we remove it
+            // await this.page.click("body");
 
-            return botNames.slice(0, botNames.length - 1);
+            // // Last element is "Create an agent in La Plateforme", so we remove it
+
+            // return botNames.slice(0, botNames.length - 1);
         } catch (e) {
             console.error("Couldn't get bot names. Please report this issues!");
             throw e;
         }
     }
 
+    // Same stuff here, they removed the option
+    // to easily change the bot.
+    // Skipping for now, just to get it working!
     async changeBot(botName) {
         try {
+            return;
             let botNames = await this.getBotNames();
 
             // Probably can shave off a little bit of time by

@@ -44,7 +44,7 @@ const BOT_NAME_SELECTOR = "div>span.line-clamp-1";
 const FOLLOW_BOT_BUTTON_SELECTOR = 'button[aria-label="Follow"]';
 const UNFOLLOW_BOT_BUTTON_SELECTOR = 'button[aria-label="Unfollow"]';
 const STOP_MESSAGE_GENERATION_BUTTON = "button>svg.css-n059si";
-const NEW_CHAT_BUTTON_SELECTOR = 'button[aria-label="Save and Start New Chat"]';
+const NEW_CHAT_BUTTON_SELECTOR = 'svg[aria-label="Save and Start New Chat"]';
 const AMAZON_CAPTCHA_MODAL_SELECTOR = "div.amzn-captcha-modal-title"; // hopefully will never be seen lmao
 const MESSAGE_MARKDOWN_CONTAINER_SELECTOR = ".flowgpt-markdown";
 // not really used but kept just in case
@@ -518,9 +518,14 @@ class FlowGPTClient {
 
         await delay(1000);
 
-        await this.page.evaluate((newChatButtonSelector) => {
-            document.querySelector(newChatButtonSelector).click();
-        }, NEW_CHAT_BUTTON_SELECTOR);
+        // Since the element changed from button to svg,
+        // have to use puppeteers click method for it
+
+        await this.page.click(NEW_CHAT_BUTTON_SELECTOR);
+
+        // await this.page.evaluate((newChatButtonSelector) => {
+        //     document.querySelector(newChatButtonSelector).click();
+        // }, NEW_CHAT_BUTTON_SELECTOR);
     }
 
     async isGenerating() {
@@ -541,6 +546,7 @@ class FlowGPTClient {
     // Changing a model shouldn't require any additional JBing or such.
     async getModelNames() {
         try {
+            // Outdated!
             // FlowGPT has 2 separate bot lists. Have to fetch both and combine for completeness
 
             // INDIVIDUAL_MODEL_SELECTOR will always time out unless the
@@ -556,7 +562,7 @@ class FlowGPTClient {
                     let commonModels =
                         document.querySelectorAll(commonModelSelector);
 
-                    commonModels[commonModels.length - 1].click();
+                    //commonModels[commonModels.length - 1].click();
 
                     // NodeList doesn't support methods like slice or map, so have to use a simple loop
                     for (let i = 1; i < commonModels.length - 1; i++) {
@@ -567,22 +573,27 @@ class FlowGPTClient {
                 COMMON_MODEL_SELECTOR
             );
 
-            await this.page.waitForSelector(INDIVIDUAL_MODEL_SELECTOR);
+            return commonModelNames;
+            // In the default mode (mobile), all bots are
+            // available using the COMMON_MODEL_SELECTOR.
+            // Lines below cause error due to the screen size!
 
-            let individualModelNames = await this.page.evaluate(
-                (individualModelSelector) => {
-                    let out = [];
-                    document
-                        .querySelectorAll(individualModelSelector)
-                        .forEach((_) =>
-                            out.push(_.parentElement.childNodes[1].textContent)
-                        );
-                    return out;
-                },
-                INDIVIDUAL_MODEL_SELECTOR
-            );
+            // await this.page.waitForSelector(INDIVIDUAL_MODEL_SELECTOR);
 
-            return [...commonModelNames, ...individualModelNames];
+            // let individualModelNames = await this.page.evaluate(
+            //     (individualModelSelector) => {
+            //         let out = [];
+            //         document
+            //             .querySelectorAll(individualModelSelector)
+            //             .forEach((_) =>
+            //                 out.push(_.parentElement.childNodes[1].textContent)
+            //             );
+            //         return out;
+            //     },
+            //     INDIVIDUAL_MODEL_SELECTOR
+            // );
+
+            // return [...commonModelNames, ...individualModelNames];
         } catch (e) {
             console.error(e);
             console.error("Couldn't get model names!");
@@ -602,25 +613,12 @@ class FlowGPTClient {
                 commonModels[commonModels.length - 1].click();
             }, COMMON_MODEL_SELECTOR);
 
-            await this.page.waitForSelector(INDIVIDUAL_MODEL_SELECTOR);
+            // Same as with getModelNames, the default behavior
+            // on mobile has changed!
 
             // Iterate through both model types and return as soon as the desired model is found and clicked.
             let successfullyChangedModel = await this.page.evaluate(
-                (individualModelSelector, commonModelSelector, modelName) => {
-                    let individualModels = document.querySelectorAll(
-                        individualModelSelector
-                    );
-
-                    for (let individualModel of individualModels) {
-                        if (
-                            individualModel.parentElement.childNodes[1]
-                                .textContent === modelName
-                        ) {
-                            individualModel.parentElement.click();
-                            return true;
-                        }
-                    }
-
+                (commonModelSelector, modelName) => {
                     let commonModels =
                         document.querySelectorAll(commonModelSelector);
 
@@ -633,10 +631,45 @@ class FlowGPTClient {
 
                     return false;
                 },
-                INDIVIDUAL_MODEL_SELECTOR,
                 COMMON_MODEL_SELECTOR,
                 modelName
             );
+
+            // await this.page.waitForSelector(INDIVIDUAL_MODEL_SELECTOR);
+
+            // // Iterate through both model types and return as soon as the desired model is found and clicked.
+            // let successfullyChangedModel = await this.page.evaluate(
+            //     (individualModelSelector, commonModelSelector, modelName) => {
+            //         let individualModels = document.querySelectorAll(
+            //             individualModelSelector
+            //         );
+
+            //         for (let individualModel of individualModels) {
+            //             if (
+            //                 individualModel.parentElement.childNodes[1]
+            //                     .textContent === modelName
+            //             ) {
+            //                 individualModel.parentElement.click();
+            //                 return true;
+            //             }
+            //         }
+
+            //         let commonModels =
+            //             document.querySelectorAll(commonModelSelector);
+
+            //         for (let i = 1; i < commonModels.length - 1; i++) {
+            //             if (commonModels[i].textContent === modelName) {
+            //                 commonModels[i].click();
+            //                 return true;
+            //             }
+            //         }
+
+            //         return false;
+            //     },
+            //     INDIVIDUAL_MODEL_SELECTOR,
+            //     COMMON_MODEL_SELECTOR,
+            //     modelName
+            // );
 
             if (!successfullyChangedModel) {
                 console.error(`ERROR: Couldn't change model to ${modelName}`);

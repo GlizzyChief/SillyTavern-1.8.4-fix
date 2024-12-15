@@ -42,9 +42,9 @@ const MODAL_CLOSE_CLASS = ".Modal_closeButton__ZYPm5";
 const LOGGED_OUT_CLASS = ".TalkToBotButton_container__UJWM4";
 const CHAT_GROW_CLASS = ".ChatPageMain_flexGrow__UnM8q"; // Element that loads the rest of the chat when scrolling down
 const MESSAGE_BUBBLE_CLASS = ".Message_leftSideMessageBubble__VPdk6";
-const STOP_BUTTON_CLASS = ".ChatStopMessageButton_stopButton__QOW41";
+const STOP_BUTTON_CLASS = 'button[aria-label="Stop message"]';
 const FILE_ATTACH_CLASS = ".ChatMessageFileInputButton_input__svNx4";
-const PURGE_CHAT_CLASS = ".ChatBreakButton_button__zyEye";
+const PURGE_CHAT_CLASS = 'button[aria-label="Clear context"]';
 const TOKEN_EXCEEDED_MESSAGE_CLASS = ".Message_noSignIcon__11Dy5";
 const MESSAGE_ACTION_BAR_CLASS = ".ChatMessageActionBar_actionBar__gyeEs";
 const SUGGESTED_REPLY_CLASS =
@@ -64,6 +64,7 @@ const BOT_NAME_CONTAINER_CLASS = ".CompactBotListItem_info__mJYLl";
 const GENERIC_MODAL_CLOSE_CLASS = ".Modal_closeButton__GycnR"; // Used when closing modals that popup when changing bot, or fetching bot list
 const OUT_OUF_MESSAGES_CLASS =
     ".ChatMessageSendButton_noFreeMessageTooltip__9IhzY";
+const SEND_MESSAGE_BUTTON = 'button[aria-label="Send message"]';
 
 class PoeClient {
     browser = null;
@@ -268,10 +269,14 @@ class PoeClient {
 
         await delay(700);
         // await this.page.evaluate((classname) => {
-            // document.querySelector(classname).scrollIntoView();
+        // document.querySelector(classname).scrollIntoView();
         // }, CHAT_GROW_CLASS);
         await this.page.evaluate((messageSelector) => {
-            document.querySelectorAll(messageSelector)[document.querySelectorAll(messageSelector).length - 1].scrollIntoView();
+            document
+                .querySelectorAll(messageSelector)
+                [
+                    document.querySelectorAll(messageSelector).length - 1
+                ].scrollIntoView();
         }, MESSAGE_BUBBLE_CLASS);
         await delay(300);
         console.log("before last message");
@@ -348,11 +353,13 @@ class PoeClient {
 
             await inputForm.press("Space");
 
-            // Since this is used only for info logging and is easy to get,
-            // decided not to add it for now.
             console.log(
-                `After test manipulation: ${await page.evaluate(
-                    `document.querySelector(".ChatMessageSendButton_sendButton__4ZyI4").disabled`
+                `After test manipulation, button.disabled is: ${await page.evaluate(
+                    (sendMessageButton) => {
+                        return document.querySelector(sendMessageButton)
+                            .disabled;
+                    },
+                    SEND_MESSAGE_BUTTON
                 )}`
             );
 
@@ -361,7 +368,7 @@ class PoeClient {
 
             await delay(20);
 
-            await inputForm.press("Enter");
+            await page.click(SEND_MESSAGE_BUTTON);
 
             await delay(100);
 
@@ -423,8 +430,12 @@ class PoeClient {
             await inputForm.press("Space");
 
             console.log(
-                `After test manipulation: ${await this.page.evaluate(
-                    "document.querySelector('.ChatMessageSendButton_sendButton__4ZyI4').disabled"
+                `After test manipulation, button.disabled is: ${await this.page.evaluate(
+                    (sendMessageButton) => {
+                        return document.querySelector(sendMessageButton)
+                            .disabled;
+                    },
+                    SEND_MESSAGE_BUTTON
                 )}`
             );
 
@@ -648,7 +659,7 @@ class PoeClient {
         // Although, this also means that we can safely iterate for a bit, since
         // not a lot of latency is created.
 
-        while (/* stillMoreBotsToLoad || */ safetyCounter < 8) {
+        while (/* stillMoreBotsToLoad || */ safetyCounter < 10) {
             await page.evaluate((classname) => {
                 document.querySelector(classname).scrollIntoView();
             }, INFINITE_SCROLL_CLASS);
