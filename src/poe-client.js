@@ -58,7 +58,7 @@ const FULL_MESSAGE_CONTAINER_CLASS = ".ChatMessage_messageRow__DHlnq"; // contai
 const DELETE_BUTTON_CLASS = ".ChatPageDeleteFooter_button__6xWPc"; // the "Delete" button on the bottom of the screen
 const DELETE_CONFIRM_BUTTON_SELECTOR =
     "div.MessageDeleteConfirmationModal_options__31rdn>button.Button_danger__Xy8Ox";
-const SIDEBAR_ITEM_CLASS = ".SidebarItem_label__Ug6_M"; // Used for triggering bot list
+const SIDEBAR_ITEM_CLASS = ".SidebarItem_iconContainer__r24sc"; // Used for triggering bot list
 const INFINITE_SCROLL_CLASS = ".InfiniteScroll_pagingTrigger__cdz9I"; // invisible element at the end of the bot list, loads more when in view
 const BOT_NAME_CONTAINER_CLASS = ".CompactBotListItem_info__mJYLl";
 const GENERIC_MODAL_CLOSE_CLASS = ".Modal_closeButton__GycnR"; // Used when closing modals that popup when changing bot, or fetching bot list
@@ -640,9 +640,7 @@ class PoeClient {
 
     async getBotNames(page = this.page) {
         await page.evaluate((classname) => {
-            [...document.querySelectorAll(classname)]
-                .filter((_) => _.innerHTML === "Your bots")[0]
-                .click();
+            document.querySelectorAll(classname)[0].click()
         }, SIDEBAR_ITEM_CLASS);
 
         // Basically, scroll a bunch of times so that all bots are loaded.
@@ -659,7 +657,7 @@ class PoeClient {
         // Although, this also means that we can safely iterate for a bit, since
         // not a lot of latency is created.
 
-        while (/* stillMoreBotsToLoad || */ safetyCounter < 10) {
+        while (/* stillMoreBotsToLoad || */ safetyCounter < 16) {
             await page.evaluate((classname) => {
                 document.querySelector(classname).scrollIntoView();
             }, INFINITE_SCROLL_CLASS);
