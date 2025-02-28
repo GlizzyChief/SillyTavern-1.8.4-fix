@@ -48,6 +48,7 @@ const MISTRAL_CHAT_LOGO = 'div>div>img[alt="LeChat Logo"]';
 const MISTRAL_BOT_NAME_CONTAINER = "div.text-sm.font-medium";
 const MISTRAL_BOT_LIST_OPENER = "div.hidden>button.flex";
 const MISTRAL_SEND_MESSAGE_BUTTON = 'button[aria-label="Send question"]';
+const MISTRAL_SCROLL_DOWN_BUTTON = '.text-text-secondary';
 
 class MistralClient {
     browser = null;
@@ -159,6 +160,16 @@ class MistralClient {
 
     async getLatestMessage() {
         console.log("Getting latest message...");
+
+        await this.page.evaluate((scrollButtonSelector) => {
+            let allButtons = document.querySelectorAll(scrollButtonSelector);
+            let button = allButtons[allButtons.length - 1]
+            if (button.textContent !== "") {
+                return;
+            }
+
+            button.click();
+        }, MISTRAL_SCROLL_DOWN_BUTTON)
 
         let lastMessage = await this.page.evaluate((containerSelector) => {
             let allMessageContainers =
